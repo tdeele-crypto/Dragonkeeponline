@@ -43,12 +43,14 @@ class DragonUpdate(BaseModel):
 class TaskItem(BaseDocument):
     category: TaskCategory
     name: str
+    is_automatic: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class TaskItemCreate(BaseModel):
     category: TaskCategory
     name: str
+    is_automatic: bool = False
 
 
 class TimeSlot(BaseDocument):

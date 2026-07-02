@@ -30,7 +30,6 @@ export default function ScheduleSlotFormScreen() {
   const [category, setCategory] = useState<TaskCategory | ''>('');
   const [timeId, setTimeId] = useState('');
   const [itemIds, setItemIds] = useState<string[]>([]);
-  const [isAutomatic, setIsAutomatic] = useState(false);
 
   const [times, setTimes] = useState<TimeSlot[]>([]);
   const [items, setItems] = useState<TaskItem[]>([]);
@@ -55,7 +54,6 @@ export default function ScheduleSlotFormScreen() {
             setCategory(slot.category);
             setTimeId(slot.time_id);
             setItemIds(slot.item_ids);
-            setIsAutomatic(slot.is_automatic);
           }
         }
       } catch (e: any) {
@@ -71,6 +69,14 @@ export default function ScheduleSlotFormScreen() {
     [items, category]
   );
 
+  const selectedLysItems = useMemo(
+    () => (category === 'lys' ? itemIds.map((id) => items.find((i) => i.id === id)).filter(Boolean) : []),
+    [category, itemIds, items]
+  ) as TaskItem[];
+
+  const computedIsAutomatic =
+    category === 'lys' && selectedLysItems.length > 0 && selectedLysItems.every((i) => i.is_automatic);
+
   const handleSave = async () => {
     if (!category || !timeId) {
       showToast('Vælg venligst kategori og tidspunkt', 'error');
@@ -83,7 +89,7 @@ export default function ScheduleSlotFormScreen() {
       time_id: timeId,
       category,
       item_ids: itemIds,
-      is_automatic: category === 'lys' ? isAutomatic : false,
+      is_automatic: category === 'lys' ? computedIsAutomatic : false,
     };
     try {
       if (isEdit) {
@@ -154,24 +160,25 @@ export default function ScheduleSlotFormScreen() {
         )}
 
         {category === 'lys' && (
-          <View style={styles.autoRow}>
-            <Text style={styles.autoLabel}>Automatisk (ingen afkrydsning nødvendig)</Text>
-            <View style={styles.autoOptions}>
-              <TouchableOpacity
-                style={[styles.autoOption, isAutomatic && styles.autoOptionActive]}
-                onPress={() => setIsAutomatic(true)}
-                testID="schedule-slot-form-automatic-option"
-              >
-                <Text style={[styles.autoOptionText, isAutomatic && styles.autoOptionTextActive]}>Automatisk</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.autoOption, !isAutomatic && styles.autoOptionActive]}
-                onPress={() => setIsAutomatic(false)}
-                testID="schedule-slot-form-manual-option"
-              >
-                <Text style={[styles.autoOptionText, !isAutomatic && styles.autoOptionTextActive]}>Manuel</Text>
-              </TouchableOpacity>
-            </View>
+          <View
+            style={[
+              styles.autoInfoBox,
+              computedIsAutomatic ? styles.autoInfoBoxAuto : styles.autoInfoBoxManual,
+            ]}
+            testID="schedule-slot-form-automatic-info"
+          >
+            <Ionicons
+              name={computedIsAutomatic ? 'sync' : 'checkbox-outline'}
+              size={16}
+              color={computedIsAutomatic ? COLORS.categories.lys.text : COLORS.textSecondary}
+            />
+            <Text style={styles.autoInfoText}>
+              {selectedLysItems.length === 0
+                ? 'Vælg emner for at se om opgaven bliver automatisk eller manuel'
+                : computedIsAutomatic
+                ? 'Automatisk - kræver ikke afkrydsning på dagsoversigten'
+                : 'Manuel - kræver afkrydsning på dagsoversigten'}
+            </Text>
           </View>
         )}
 
@@ -265,40 +272,30 @@ const styles = StyleSheet.create({
     padding: 20,
     paddingBottom: 60,
   },
-  autoRow: {
-    marginBottom: 16,
-  },
-  autoLabel: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: COLORS.textSecondary,
-    marginBottom: 8,
-  },
-  autoOptions: {
+  autoInfoBox: {
     flexDirection: 'row',
-    gap: 10,
-  },
-  autoOption: {
-    flex: 1,
-    minHeight: 48,
+    alignItems: 'center',
+    gap: 8,
     borderRadius: 14,
     borderWidth: 1,
-    borderColor: COLORS.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+  },
+  autoInfoBoxAuto: {
+    backgroundColor: COLORS.categories.lys.light,
+    borderColor: COLORS.categories.lys.border,
+  },
+  autoInfoBoxManual: {
     backgroundColor: COLORS.background,
-    alignItems: 'center',
-    justifyContent: 'center',
+    borderColor: COLORS.border,
   },
-  autoOptionActive: {
-    backgroundColor: COLORS.categories.lys.bg,
-    borderColor: COLORS.categories.lys.bg,
-  },
-  autoOptionText: {
-    fontSize: 14,
-    fontWeight: '700',
+  autoInfoText: {
+    flex: 1,
+    fontSize: 12,
+    fontWeight: '600',
     color: COLORS.textSecondary,
-  },
-  autoOptionTextActive: {
-    color: COLORS.white,
+    lineHeight: 17,
   },
   saveBtn: {
     backgroundColor: COLORS.primary,

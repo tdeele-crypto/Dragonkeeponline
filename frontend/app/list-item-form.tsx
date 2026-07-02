@@ -4,6 +4,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   StyleSheet,
+  Switch,
   Text,
   TouchableOpacity,
   View,
@@ -23,16 +24,19 @@ import type { TaskCategory } from '@/types';
 export default function ListItemFormScreen() {
   const router = useRouter();
   const showToast = useToast();
-  const { category, id, currentName, currentTime } = useLocalSearchParams<{
+  const { category, id, currentName, currentTime, currentAutomatic } = useLocalSearchParams<{
     category: string;
     id?: string;
     currentName?: string;
     currentTime?: string;
+    currentAutomatic?: string;
   }>();
   const isTime = category === 'tider';
+  const isLys = category === 'lys';
   const isEdit = !!id;
 
   const [name, setName] = useState(currentName || '');
+  const [isAutomatic, setIsAutomatic] = useState(currentAutomatic === 'true');
   const [time, setTime] = useState(() => {
     if (currentTime) {
       const [hh, mm] = currentTime.split(':').map(Number);
@@ -66,11 +70,12 @@ export default function ListItemFormScreen() {
           setSaving(false);
           return;
         }
+        const payload = { category, name: name.trim(), is_automatic: isLys ? isAutomatic : false };
         if (isEdit) {
-          await api.put(`/task-items/${id}`, { category, name: name.trim() });
+          await api.put(`/task-items/${id}`, payload);
           showToast('Emne opdateret', 'success');
         } else {
-          await api.post('/task-items', { category, name: name.trim() });
+          await api.post('/task-items', payload);
           showToast('Emne tilføjet', 'success');
         }
       }
@@ -111,6 +116,21 @@ export default function ListItemFormScreen() {
               placeholder="F.eks. Larver"
               autoFocus
             />
+          )}
+
+          {isLys && (
+            <View style={styles.autoRow} testID="list-item-form-automatic-row">
+              <View style={{ flex: 1 }}>
+                <Text style={styles.autoLabel}>Automatisk</Text>
+                <Text style={styles.autoSubLabel}>Ingen afkrydsning nødvendig på dagsoversigten</Text>
+              </View>
+              <Switch
+                value={isAutomatic}
+                onValueChange={setIsAutomatic}
+                trackColor={{ false: COLORS.border, true: COLORS.categories.lys.bg }}
+                testID="list-item-form-automatic-switch"
+              />
+            </View>
           )}
 
           <TouchableOpacity
@@ -167,6 +187,28 @@ const styles = StyleSheet.create({
   },
   form: {
     padding: 20,
+  },
+  autoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: COLORS.white,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    marginBottom: 16,
+    gap: 12,
+  },
+  autoLabel: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  autoSubLabel: {
+    fontSize: 12,
+    color: COLORS.textMuted,
+    marginTop: 2,
   },
   saveBtn: {
     backgroundColor: COLORS.primary,

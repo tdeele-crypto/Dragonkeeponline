@@ -96,6 +96,21 @@ bruger opretter alt selv.
 - Packages added: expo-document-picker, expo-sharing (expo-file-system v19
   already present, using new File/Paths class API).
 
+## Feature additions (2026-02-16, session 3)
+- Moved "Automatisk/Manuel" ownership from the schedule-slot level to the
+  TaskItem level for Lys & Varme: TaskItem now has `is_automatic: bool`
+  (backend: models.py + PUT /api/task-items/{id} accepts it).
+- Opgaver tab: inline Switch per Lys & Varme row to enable/disable
+  automatik directly (optimistic update, PUT on toggle).
+- list-item-form.tsx: Automatisk switch shown when adding/editing a Lys &
+  Varme item.
+- schedule-slot-form.tsx: removed the old manual Automatisk/Manuel picker;
+  now shows a read-only computed info box - slot.is_automatic is derived as
+  true only if ALL selected lys items are automatic (empty selection =
+  manual/unknown, prompts user to pick items first). This value is still
+  what gets saved on the ScheduleSlot and used by the daily overview
+  checkbox logic, so no backend/daily-overview changes were needed.
+
 ## Prioritized backlog / next tasks
 - P1: Push/local notification deep-testing on a real Android device (Expo Go
   limitations for background/killed app state).
@@ -104,3 +119,5 @@ bruger opretter alt selv.
   declined for v1, manual only).
 - P2: Weekly plan duplication ("copy Monday's plan to all days") to speed up
   setup for multiple age categories.
+- P2: Offer to clear leftover "TEST_" seed data (dragons/items) still
+  present in the database from earlier testing sessions, once user confirms.

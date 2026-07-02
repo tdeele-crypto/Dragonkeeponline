@@ -26,7 +26,10 @@ async def update_task_item(item_id: str, payload: TaskItemCreate):
         oid = to_object_id(item_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Ugyldigt id")
-    result = await db.task_items.update_one({"_id": oid}, {"$set": {"name": payload.name}})
+    result = await db.task_items.update_one(
+        {"_id": oid},
+        {"$set": {"name": payload.name, "is_automatic": payload.is_automatic}},
+    )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Emne ikke fundet")
     doc = await db.task_items.find_one({"_id": oid})

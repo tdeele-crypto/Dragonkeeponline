@@ -150,6 +150,20 @@ export default function ListsScreen() {
     });
   };
 
+  const handleToggleItemAutomatic = async (item: TaskItem, value: boolean) => {
+    setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, is_automatic: value } : i)));
+    try {
+      await api.put(`/task-items/${item.id}`, {
+        category: item.category,
+        name: item.name,
+        is_automatic: value,
+      });
+    } catch (e: any) {
+      showToast(e.message || 'Kunne ikke opdatere automatik', 'error');
+      setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, is_automatic: !value } : i)));
+    }
+  };
+
   const filteredItems = items.filter((i) => i.category === activeTab);
 
   return (
@@ -225,11 +239,22 @@ export default function ListsScreen() {
             filteredItems.map((item) => (
               <View key={item.id} style={styles.row} testID={`item-row-${item.id}`}>
                 <Text style={styles.rowText}>{item.name}</Text>
+                {item.category === 'lys' && (
+                  <View style={styles.autoToggleGroup} testID={`item-automatic-group-${item.id}`}>
+                    <Text style={styles.autoToggleLabel}>Automatisk</Text>
+                    <Switch
+                      value={item.is_automatic}
+                      onValueChange={(value) => handleToggleItemAutomatic(item, value)}
+                      trackColor={{ false: COLORS.border, true: COLORS.categories.lys.bg }}
+                      testID={`item-automatic-toggle-${item.id}`}
+                    />
+                  </View>
+                )}
                 <TouchableOpacity
                   onPress={() =>
                     router.push({
                       pathname: '/list-item-form',
-                      params: { category: item.category, id: item.id, currentName: item.name },
+                      params: { category: item.category, id: item.id, currentName: item.name, currentAutomatic: String(item.is_automatic) },
                     })
                   }
                   testID={`item-edit-button-${item.id}`}
@@ -364,6 +389,17 @@ const styles = StyleSheet.create({
     height: 36,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  autoToggleGroup: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  autoToggleLabel: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
   },
   settingsSection: {
     marginTop: 24,
