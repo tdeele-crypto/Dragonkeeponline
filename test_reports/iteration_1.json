@@ -1,0 +1,44 @@
+{
+  "summary": "First end-to-end test of Bearded Dragon Care (Skægagame Pasning) app. Backend: 15/15 pytest cases passed covering dragons CRUD + max-5 limit, times CRUD + duplicate/in-use guard, task-items CRUD, schedule-slots CRUD, daily-overview computation, and completions toggle. Frontend: all 4 tabs (Dagsoversigt, Agamer, Ugeplaner, Lister) tested via Playwright mobile viewport - dragon add/edit/delete (with proper custom bottom-sheet confirm, not native Alert), max-5 dragon enforcement (FAB hides at 5/5), Lister category chips + time/item add/delete, schedule slot creation with category/time/multi-item picker + Automatisk/Manuel toggle for lys, and Dagsoversigt date navigation + checkbox toggling with correct progress count and automatic-task badge (no checkbox for automatic lys tasks). All core flows work correctly end-to-end.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [
+      {
+        "screen": "Lister/schedule-slot-form/list-item-form (web preview only)",
+        "issues": [
+          "@react-native-community/datetimepicker DateTimePicker is not supported on web (console: 'DateTimePicker is not supported on: web'). Time picker just shows current wall-clock time and updates every second instead of opening a scrollable time picker UI, making it impossible to pick an arbitrary custom time in the web preview. This is a known library limitation for web platform, not a code bug, but worth noting since testers/users previewing via web browser cannot set a specific time value (birthday date picker likely has the same limitation)."
+        ]
+      }
+    ],
+    "react_native_issues": [
+      {
+        "component": "Likely SelectSheet.tsx or CategoryBadge.tsx / a component rendering '·' or similar separator text",
+        "issue": "Console repeatedly logs 'Unexpected text node: . A text node cannot be a child of a <View>.' when opening select sheets (category, items) in schedule-slot-form. Indicates a stray text/period character rendered directly inside a View instead of wrapped in a Text component. Does not break functionality but violates RN text-wrapping rule and should be fixed."
+      }
+    ]
+  },
+  "test_report_links": ["/app/backend/tests/test_backend.py", "/app/test_reports/pytest/pytest_results.xml"],
+  "action_items": [
+    "Find and fix the component causing 'Unexpected text node: . A text node cannot be a child of a <View>' warning (appears when opening SelectSheet in schedule-slot-form, likely a stray '.' or similar character outside a Text tag).",
+    "Consider a fallback custom time-picker UI for web platform since native DateTimePicker doesn't render a real picker on web (informational, not blocking since app is mobile-first)."
+  ],
+  "critical_code_review_comments": [
+    "Backend code is clean, async, uses Pydantic models, excludes MongoDB _id correctly via response_model_by_alias=False, proper HTTP status codes and Danish error messages.",
+    "Good referential integrity handling: deleting a task-item pulls it from schedule_slots.item_ids; deleting a time in-use is blocked with 400; deleting dragon/schedule-slot cascades completions cleanup.",
+    "Frontend consistently uses testID attributes on interactive elements, StyleSheet.create for styling, proper loading/error/empty states, and TouchableOpacity/View/Text (no HTML elements) - good adherence to RN conventions.",
+    "Confirm dialogs use a custom bottom-sheet (OverlayContext) instead of native Alert as required.",
+    "Minor: system container clock shows 'Torsdag 2. Juli 2026' (July) instead of expected January 2026 mentioned in problem statement - this is an environment clock discrepancy, not an app bug, but noting for context since day-of-week-dependent tests were run against the container's actual current date."
+  ],
+  "updated_files": ["/app/backend/tests/test_backend.py"],
+  "success_rate": {"backend": "100% (15/15)", "frontend": "100% of tested flows passed functionally; 1 non-blocking RN text-node console warning and 1 web-only DateTimePicker limitation noted"},
+  "seed_data_creation": "Left test data in DB per instructions (no cleanup required): dragons TEST_Spike_Updated (7-12), TEST_Filler0/1/2 (12+); times 08:30, 09:59 (+ duplicates from prior test runs); task-items TEST_Larver x2 (fodring), TEST_Badning (pleje), TEST_UVBLys (lys); schedule-slots for tirsdag/4-7 (fodring) and torsdag/7-12 (pleje manual + lys automatic); one completion toggled true then back to false during testing, final state: pleje task marked completed=true for TEST_Spike_Updated on 2026-07-02.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "Backend fully verified via pytest at /app/backend/tests/test_backend.py (reusable). DB now has non-zero test data (4 dragons, times, task-items, 2 schedule slots) - fine to reuse or clean up as needed for future iterations. Notifications toggle correctly requests permission and shows 'Tilladelse til notifikationer blev afvist' toast in the automated browser environment (expected, browsers deny notification permission in headless/automation context - not a bug). Camera/gallery image picking was not tested end-to-end due to browser permission limitations as noted in the review request - photo picker action sheet (dragon-form-photo-sheet) opened correctly showing 'Tag foto' / 'Vælg fra galleri' options but actual camera/gallery selection was skipped.",
+  "rca_of_issue": "The 'Unexpected text node' console warning appeared specifically when SelectSheet modals opened during schedule-slot-form testing (category sheet, items sheet). Root cause not fully isolated - did not appear on dragon-form's SelectSheet usage (gender/age sheets), only schedule-slot-form's SelectSheet usage which passes options with 'icon' field additionally. Suggest checking SelectSheet.tsx for how icon-labeled options with category value strings are rendered - possibly a stray whitespace/period character in conditional JSX (e.g. `{condition && '.'}` pattern) rendered as sibling to a View rather than nested in Text."
+}
