@@ -105,9 +105,13 @@ class CompletionToggle(BaseModel):
 class AppSettings(BaseDocument):
     banner_image_base64: Optional[str] = None
     banner_text: Optional[str] = None
+    banner_bg_color: Optional[str] = None
+    heading_color: Optional[str] = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class AppSettingsUpdate(BaseModel):
     banner_image_base64: Optional[str] = None
     banner_text: Optional[str] = None
+    banner_bg_color: Optional[str] = None
+    heading_color: Optional[str] = None

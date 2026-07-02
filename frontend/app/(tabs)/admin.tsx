@@ -22,13 +22,28 @@ import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import PageBanner from '@/components/PageBanner';
 
+const SWATCH_COLORS = [
+  '#E07A5F',
+  '#81B29A',
+  '#3D405B',
+  '#F2CC8F',
+  '#5B8FB9',
+  '#8E7DBE',
+  '#D64545',
+  '#1C1917',
+  '#78716C',
+  '#FFFFFF',
+];
+
 export default function AdminScreen() {
   const showToast = useToast();
   const showConfirm = useConfirm();
-  const { bannerImage, bannerText, refresh } = useAdminSettings();
+  const { bannerImage, bannerText, bannerBgColor, headingColor, refresh } = useAdminSettings();
 
   const [localImage, setLocalImage] = useState<string | null>(null);
   const [localText, setLocalText] = useState('');
+  const [localBgColor, setLocalBgColor] = useState<string | null>(null);
+  const [localHeadingColor, setLocalHeadingColor] = useState<string | null>(null);
   const [savingBanner, setSavingBanner] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
@@ -36,7 +51,9 @@ export default function AdminScreen() {
   useEffect(() => {
     setLocalImage(bannerImage);
     setLocalText(bannerText);
-  }, [bannerImage, bannerText]);
+    setLocalBgColor(bannerBgColor);
+    setLocalHeadingColor(headingColor);
+  }, [bannerImage, bannerText, bannerBgColor, headingColor]);
 
   const pickBannerImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -47,7 +64,7 @@ export default function AdminScreen() {
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
       allowsEditing: true,
-      aspect: [16, 9],
+      aspect: [4, 1],
       quality: 0.6,
       base64: true,
     });
@@ -62,6 +79,8 @@ export default function AdminScreen() {
       await api.put('/admin/settings', {
         banner_image_base64: localImage,
         banner_text: localText.trim() || null,
+        banner_bg_color: localBgColor,
+        heading_color: localHeadingColor,
       });
       await refresh();
       showToast('Banner gemt', 'success');
@@ -195,9 +214,16 @@ export default function AdminScreen() {
             {localImage ? (
               <Image source={{ uri: localImage }} style={styles.bannerPreviewImage} />
             ) : (
-              <View style={styles.bannerPlaceholder}>
-                <Ionicons name="image-outline" size={26} color={COLORS.textMuted} />
-                <Text style={styles.bannerPlaceholderText}>Vælg banner-billede</Text>
+              <View style={[styles.bannerPlaceholder, localBgColor ? { backgroundColor: localBgColor, borderStyle: 'solid' } : null]}>
+                <Ionicons name="image-outline" size={26} color={localBgColor ? COLORS.white : COLORS.textMuted} />
+                <Text style={[styles.bannerPlaceholderText, localBgColor ? { color: COLORS.white } : null]}>Vælg banner-billede</Text>
+              </View>
+            )}
+            {!!localText && (
+              <View style={styles.bannerPreviewOverlay}>
+                <Text style={[styles.bannerPreviewOverlayText, localHeadingColor ? { color: localHeadingColor } : null]} numberOfLines={1}>
+                  {localText}
+                </Text>
               </View>
             )}
             <View style={styles.bannerEditBadge}>
@@ -220,6 +246,66 @@ export default function AdminScreen() {
             placeholderTextColor={COLORS.textMuted}
             testID="admin-banner-text-input"
           />
+
+          <Text style={styles.label}>Baggrundsfarve (kun når intet billede er valgt)</Text>
+          <View style={styles.swatchRow}>
+            <TouchableOpacity
+              style={[
+                styles.swatchNone,
+                !localBgColor && styles.swatchSelected,
+              ]}
+              onPress={() => setLocalBgColor(null)}
+              testID="admin-bg-color-none"
+            >
+              <Ionicons name="close" size={16} color={COLORS.textMuted} />
+            </TouchableOpacity>
+            {SWATCH_COLORS.map((color) => (
+              <TouchableOpacity
+                key={`bg-${color}`}
+                style={[
+                  styles.swatch,
+                  { backgroundColor: color },
+                  localBgColor === color && styles.swatchSelected,
+                ]}
+                onPress={() => setLocalBgColor(color)}
+                testID={`admin-bg-color-${color}`}
+              >
+                {localBgColor === color && (
+                  <Ionicons name="checkmark" size={16} color={color === '#FFFFFF' ? COLORS.textPrimary : COLORS.white} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Overskriftsfarve</Text>
+          <View style={styles.swatchRow}>
+            <TouchableOpacity
+              style={[
+                styles.swatchNone,
+                !localHeadingColor && styles.swatchSelected,
+              ]}
+              onPress={() => setLocalHeadingColor(null)}
+              testID="admin-heading-color-none"
+            >
+              <Ionicons name="close" size={16} color={COLORS.textMuted} />
+            </TouchableOpacity>
+            {SWATCH_COLORS.map((color) => (
+              <TouchableOpacity
+                key={`heading-${color}`}
+                style={[
+                  styles.swatch,
+                  { backgroundColor: color },
+                  localHeadingColor === color && styles.swatchSelected,
+                ]}
+                onPress={() => setLocalHeadingColor(color)}
+                testID={`admin-heading-color-${color}`}
+              >
+                {localHeadingColor === color && (
+                  <Ionicons name="checkmark" size={16} color={color === '#FFFFFF' ? COLORS.textPrimary : COLORS.white} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
 
           <TouchableOpacity
             style={[styles.saveBtn, savingBanner && styles.saveBtnDisabled]}
@@ -307,12 +393,12 @@ const styles = StyleSheet.create({
   },
   bannerPreviewImage: {
     width: '100%',
-    height: 110,
+    aspectRatio: 4,
     borderRadius: 16,
   },
   bannerPlaceholder: {
     width: '100%',
-    height: 110,
+    aspectRatio: 4,
     borderRadius: 16,
     backgroundColor: COLORS.background,
     borderWidth: 1,
@@ -326,6 +412,22 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: COLORS.textMuted,
     fontWeight: '600',
+  },
+  bannerPreviewOverlay: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.28)',
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderBottomLeftRadius: 16,
+    borderBottomRightRadius: 16,
+  },
+  bannerPreviewOverlayText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '800',
   },
   bannerEditBadge: {
     position: 'absolute',
@@ -343,6 +445,35 @@ const styles = StyleSheet.create({
     fontSize: 13,
     fontWeight: '700',
     marginBottom: 16,
+  },
+  swatchRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+    marginBottom: 16,
+  },
+  swatch: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  swatchNone: {
+    width: 38,
+    height: 38,
+    borderRadius: 19,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
+  },
+  swatchSelected: {
+    borderWidth: 2,
+    borderColor: COLORS.primary,
   },
   label: {
     fontSize: 13,
