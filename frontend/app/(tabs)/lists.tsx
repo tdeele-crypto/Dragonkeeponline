@@ -23,6 +23,7 @@ import {
   rescheduleAllNotifications,
   requestNotificationPermissions,
   cancelAllNotifications,
+  isNotificationsAvailable,
 } from '@/utils/notifications';
 import type { TaskItem, TimeSlot, Dragon, ScheduleSlot } from '@/types';
 
@@ -86,6 +87,12 @@ export default function ListsScreen() {
     setUpdatingNotifications(true);
     try {
       if (value) {
+        const available = await isNotificationsAvailable();
+        if (!available) {
+          showToast('Notifikationer kræver en udviklings-build (ikke tilgængelig i Expo Go)', 'error');
+          setUpdatingNotifications(false);
+          return;
+        }
         const granted = await requestNotificationPermissions();
         if (!granted) {
           showToast('Tilladelse til notifikationer blev afvist', 'error');
