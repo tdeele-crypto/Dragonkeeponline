@@ -102,6 +102,23 @@ class TestAppearanceSettingsPersistence:
         assert get_data["app_bg_color"] is None
         assert get_data["page_title_color"] is None
 
+    def test_white_color_both_fields_persists(self, api_client, original_settings):
+        """Follow-up UI change: white (#FFFFFF) is now directly selectable for
+        app_bg_color/page_title_color (replacing the 'none' reset button in the
+        App-udseende section only). Verify backend persists #FFFFFF correctly."""
+        payload = {"app_bg_color": "#FFFFFF", "page_title_color": "#FFFFFF"}
+        put_resp = api_client.put(f"{API}/admin/settings", json=payload)
+        assert put_resp.status_code == 200
+        put_data = put_resp.json()
+        assert put_data["app_bg_color"] == "#FFFFFF"
+        assert put_data["page_title_color"] == "#FFFFFF"
+
+        get_resp = api_client.get(f"{API}/admin/settings")
+        assert get_resp.status_code == 200
+        get_data = get_resp.json()
+        assert get_data["app_bg_color"] == "#FFFFFF"
+        assert get_data["page_title_color"] == "#FFFFFF"
+
     def test_mongodb_id_excluded_and_no_objectid_leak(self, api_client):
         resp = api_client.get(f"{API}/admin/settings")
         data = resp.json()

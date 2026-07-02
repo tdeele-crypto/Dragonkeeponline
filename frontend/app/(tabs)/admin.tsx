@@ -370,13 +370,17 @@ export default function AdminScreen() {
           <Text style={styles.label}>App-baggrundsfarve</Text>
           <View style={styles.swatchRow}>
             <TouchableOpacity
-              style={[styles.swatchNone, !localAppBgColor && styles.swatchSelected]}
-              onPress={() => setLocalAppBgColor(null)}
-              testID="admin-app-bg-color-none"
+              style={[
+                styles.swatch,
+                styles.swatchWhite,
+                localAppBgColor === '#FFFFFF' && styles.swatchSelected,
+              ]}
+              onPress={() => setLocalAppBgColor('#FFFFFF')}
+              testID="admin-app-bg-color-white"
             >
-              <Ionicons name="close" size={16} color={COLORS.textMuted} />
+              {localAppBgColor === '#FFFFFF' && <Ionicons name="checkmark" size={16} color={COLORS.textPrimary} />}
             </TouchableOpacity>
-            {SWATCH_COLORS.map((color) => (
+            {SWATCH_COLORS.filter((c) => c !== '#FFFFFF').map((color) => (
               <TouchableOpacity
                 key={`app-bg-${color}`}
                 style={[
@@ -387,9 +391,7 @@ export default function AdminScreen() {
                 onPress={() => setLocalAppBgColor(color)}
                 testID={`admin-app-bg-color-${color}`}
               >
-                {localAppBgColor === color && (
-                  <Ionicons name="checkmark" size={16} color={color === '#FFFFFF' ? COLORS.textPrimary : COLORS.white} />
-                )}
+                {localAppBgColor === color && <Ionicons name="checkmark" size={16} color={COLORS.white} />}
               </TouchableOpacity>
             ))}
           </View>
@@ -397,13 +399,17 @@ export default function AdminScreen() {
           <Text style={styles.label}>Sideoverskrift-farve</Text>
           <View style={styles.swatchRow}>
             <TouchableOpacity
-              style={[styles.swatchNone, !localPageTitleColor && styles.swatchSelected]}
-              onPress={() => setLocalPageTitleColor(null)}
-              testID="admin-page-title-color-none"
+              style={[
+                styles.swatch,
+                styles.swatchWhite,
+                localPageTitleColor === '#FFFFFF' && styles.swatchSelected,
+              ]}
+              onPress={() => setLocalPageTitleColor('#FFFFFF')}
+              testID="admin-page-title-color-white"
             >
-              <Ionicons name="close" size={16} color={COLORS.textMuted} />
+              {localPageTitleColor === '#FFFFFF' && <Ionicons name="checkmark" size={16} color={COLORS.textPrimary} />}
             </TouchableOpacity>
-            {SWATCH_COLORS.map((color) => (
+            {SWATCH_COLORS.filter((c) => c !== '#FFFFFF').map((color) => (
               <TouchableOpacity
                 key={`page-title-${color}`}
                 style={[
@@ -414,9 +420,7 @@ export default function AdminScreen() {
                 onPress={() => setLocalPageTitleColor(color)}
                 testID={`admin-page-title-color-${color}`}
               >
-                {localPageTitleColor === color && (
-                  <Ionicons name="checkmark" size={16} color={color === '#FFFFFF' ? COLORS.textPrimary : COLORS.white} />
-                )}
+                {localPageTitleColor === color && <Ionicons name="checkmark" size={16} color={COLORS.white} />}
               </TouchableOpacity>
             ))}
           </View>
@@ -588,6 +592,10 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: COLORS.border,
     backgroundColor: COLORS.background,
+  },
+  swatchWhite: {
+    backgroundColor: '#FFFFFF',
+    borderColor: COLORS.borderLight,
   },
   swatchSelected: {
     borderWidth: 2,
