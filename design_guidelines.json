@@ -1,0 +1,103 @@
+{
+  "theme": "light",
+  "archetype": "1 (Organic & Earthy)",
+  "domain_context": "Pet Care / Reptile Management Mobile App",
+  "typography": {
+    "heading_font": "Nunito",
+    "body_font": "Manrope",
+    "hierarchy": {
+      "h1": "text-3xl md:text-4xl tracking-tight font-black text-stone-900",
+      "h2": "text-2xl md:text-3xl tracking-tight font-extrabold text-stone-800",
+      "h3": "text-xl font-bold text-stone-800",
+      "body": "text-base font-medium leading-relaxed text-stone-600",
+      "small": "text-xs font-bold tracking-widest uppercase text-stone-500"
+    }
+  },
+  "colors": {
+    "background": "bg-[#FAF9F6]",
+    "surface": "bg-white",
+    "text_primary": "text-stone-900",
+    "text_secondary": "text-stone-500",
+    "primary": {
+      "bg": "bg-[#E07A5F]",
+      "hover": "hover:bg-[#C96B52]",
+      "text": "text-white"
+    },
+    "categories": {
+      "fodring": {
+        "bg": "bg-[#81B29A]",
+        "light_bg": "bg-[#81B29A]/15",
+        "border": "border-[#81B29A]/30",
+        "text": "text-[#2C4C3B]"
+      },
+      "pleje": {
+        "bg": "bg-[#F2CC8F]",
+        "light_bg": "bg-[#F2CC8F]/25",
+        "border": "border-[#F2CC8F]/50",
+        "text": "text-[#7A5B22]"
+      },
+      "lys": {
+        "bg": "bg-[#3D405B]",
+        "light_bg": "bg-[#3D405B]/10",
+        "border": "border-[#3D405B]/30",
+        "text": "text-[#3D405B]"
+      }
+    },
+    "borders": "border-stone-200"
+  },
+  "layout_and_spacing": {
+    "mobile_first": true,
+    "container_padding": "p-4 md:p-6 pb-24",
+    "card_style": "bg-white rounded-2xl border border-stone-200 shadow-[0_8px_24px_rgba(0,0,0,0.04)] p-5 relative overflow-hidden",
+    "grid_system": {
+      "dashboard_columns_wrapper": "flex overflow-x-auto snap-x snap-mandatory gap-4 pb-6 hide-scrollbar",
+      "dashboard_column_item": "min-w-[88vw] md:min-w-[360px] snap-center flex-shrink-0 h-full flex flex-col gap-4"
+    }
+  },
+  "components": {
+    "navigation": {
+      "type": "Bottom Navigation Bar",
+      "classes": "fixed bottom-0 left-0 right-0 z-50 backdrop-blur-xl bg-white/90 border-t border-stone-200 pb-safe pt-2 px-4 flex justify-around items-center h-20"
+    },
+    "buttons": "rounded-full font-bold active:scale-95 transition-all duration-200 px-6 py-3 flex items-center justify-center gap-2",
+    "checkboxes": "w-8 h-8 rounded-full border-2 border-stone-300 data-[state=checked]:border-[#81B29A] data-[state=checked]:bg-[#81B29A] transition-colors flex-shrink-0",
+    "inputs": "bg-stone-50 border border-stone-200 rounded-xl px-4 py-3 focus:ring-2 focus:ring-[#E07A5F]/50 focus:border-[#E07A5F] text-base w-full min-h-[44px]",
+    "badges": "inline-flex items-center rounded-full px-3 py-1 text-xs font-bold uppercase tracking-wider"
+  },
+  "motion_and_interactions": {
+    "hover_states": "hover:-translate-y-1 hover:shadow-lg transition-all duration-300 ease-out",
+    "tap_states": "active:scale-[0.98] transition-transform",
+    "list_animation": "staggered fade-in-up for daily tasks"
+  },
+  "images": {
+    "placeholders": [
+      {
+        "url": "https://images.unsplash.com/photo-1619816128374-a6b4766ca92c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwxfHxiZWFyZGVkJTIwZHJhZ29uJTIwbGl6YXJkfGVufDB8fHx8MTc4Mjk4NDU1NXww&ixlib=rb-4.1.0&q=85",
+        "description": "Bearded dragon on brown tree branch (Use for Dragon 1 avatar/profile)",
+        "category": "dragon_profile"
+      },
+      {
+        "url": "https://images.unsplash.com/photo-1674484783245-4c065b84daa8?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1MDZ8MHwxfHNlYXJjaHwzfHxiZWFyZGVkJTIwZHJhZ29uJTIwbGl6YXJkfGVufDB8fHx8MTc4Mjk4NDU1NXww&ixlib=rb-4.1.0&q=85",
+        "description": "A small lizard sitting on top of a white surface (Use for Dragon 2 avatar/profile)",
+        "category": "dragon_profile"
+      }
+    ]
+  },
+  "accessibility": {
+    "touch_targets": "Minimum 44x44px for all buttons, checkboxes, inputs, and interactive icons.",
+    "contrast": "Text contrast must meet WCAG AA standards. Use dark text variants (#2C4C3B, #7A5B22, #3D405B) on light category backgrounds.",
+    "test_ids": "CRITICAL: All interactive and key informational elements MUST include a 'data-testid' attribute to facilitate robust automated testing (e.g., data-testid='add-dragon-button')."
+  },
+  "instructions_to_main_agent": [
+    "Context: The app is for Danish users (all UI text must be in Danish). The tech stack is React (.jsx files, NO .tsx) + Tailwind + Shadcn. Treat the frontend as a mobile-first application, optimized for touch.",
+    "Global layout: App must have a fixed bottom tab bar (Home/Dagsoversigt, Agamer, Ugeplaner, Lister/Settings) replacing standard web headers to mimic native app feel.",
+    "Typography: Use Google Fonts 'Nunito' (headings) and 'Manrope' (body). Import them correctly in your CSS/HTML.",
+    "Home Tab (Dagsoversigt): Implement a horizontal scroll snap view. Multiple dragons must show side-by-side as full-height columns with min-w-[88vw] so one is completely visible at a time on mobile, snapping into place gracefully.",
+    "Task Items UI: Emphasize clear color coding based on the category (Fodring = Green, Pleje = Yellow/Sand, Lys = Dark Navy). Use the light_bg and text color variants from the guidelines for task cards to ensure readability.",
+    "Checkboxes: Make them massive (min 44px touch target) for easy marking while physically handling a pet or terrarium equipment.",
+    "Forms & UI Primitives: Exclusively use Shadcn components (DropdownMenu, Select, Dialog) customized with the rounded-xl 'Clay & Crisp' aesthetic. Do NOT use native HTML date pickers or selects.",
+    "Logic rules: Max 5 dragons. Age categories are strictly manual (2-4, 4-7, 7-12, 12+ måneder). Schedules connect a time block, a task type, and an age category.",
+    "Testing: Add data-testid to EVERY button, input, checkbox, dialog trigger, and navigation tab.",
+    "File Extensions: Use .jsx or .js exclusively. DO NOT create .tsx or .ts files."
+  ]
+}
