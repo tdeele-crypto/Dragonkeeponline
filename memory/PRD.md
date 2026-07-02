@@ -111,6 +111,21 @@ bruger opretter alt selv.
   what gets saved on the ScheduleSlot and used by the daily overview
   checkbox logic, so no backend/daily-overview changes were needed.
 
+## Feature additions (2026-07-02, session 4)
+- Banner image crop ratio changed from 16:9 to 4:1 ("1 høj 4 bred") in
+  admin.tsx image picker (aspect: [4, 1]) and preview/PageBanner styles
+  (aspectRatio: 4 instead of fixed height).
+- Added fixed-palette (10 colors + "none/reset") swatch pickers in Admin >
+  Banner for: baggrundsfarve (banner_bg_color, used ONLY as fallback solid
+  color when no image is set) and overskriftsfarve (heading_color, applied
+  to banner text in both image-overlay and solid-color fallback modes).
+  No backend changes needed - AppSettings model already had these fields.
+- PageBanner.tsx: now renders a solid-color banner with text when no image
+  is set but a bg color/text exists (previously hidden entirely without an
+  image).
+- Tested via testing_agent_v4_expo: banner UI, color persistence, and
+  fallback rendering across all tabs confirmed working; no regressions.
+
 ## Prioritized backlog / next tasks
 - P1: Push/local notification deep-testing on a real Android device (Expo Go
   limitations for background/killed app state).
