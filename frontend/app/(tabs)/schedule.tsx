@@ -16,6 +16,7 @@ import { AGE_CATEGORIES, DAYS_OF_WEEK, DAY_LABELS, DAY_LABELS_SHORT } from '@/co
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import CategoryBadge from '@/components/CategoryBadge';
+import PageBanner from '@/components/PageBanner';
 import type { AgeCategory, DayOfWeek, ScheduleSlot, TaskItem, TimeSlot } from '@/types';
 
 export default function ScheduleScreen() {
@@ -92,6 +93,7 @@ export default function ScheduleScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <PageBanner />
       <View style={styles.header}>
         <Text style={styles.title}>Ugeplaner</Text>
       </View>

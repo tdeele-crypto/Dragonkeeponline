@@ -60,12 +60,47 @@ bruger opretter alt selv.
   in schedule-slot-form's SelectSheet; camera/gallery capture not testable
   in browser automation.
 
+## Bug fixes (2026-02-16)
+- Fixed critical Android/Expo Go boot crash/splash-lock: removed unused
+  custom font loading (Nunito/Manrope useFonts call in _layout.tsx) that
+  could hang `customFontsLoaded` forever on native Android since the fonts
+  were never actually applied anywhere in styles. App now only depends on
+  icon font loading (already had robust error fallback), so splash always
+  hides.
+- Hardened expo-notifications usage: lazy dynamic `import('expo-notifications')`
+  wrapped in try/catch in utils/notifications.ts (Expo Go on Android SDK53+
+  removed push-token support there; this prevents any future related error
+  from throwing uncaught).
+
+## Feature additions (2026-02-16, session 2)
+- Edit support added for Tider (times) and Fodring/Pleje/Lys emner
+  (task-items): new PUT /api/times/{id} and PUT /api/task-items/{id}
+  backend endpoints; list-item-form.tsx now supports isEdit mode
+  (prefilled via currentName/currentTime params passed from lists.tsx);
+  edit (pencil) icon added next to delete icon on every row in Lister tab.
+- Renamed "Lister" tab/screen to "Opgaver" (title + tab bar label).
+- Added 5th bottom tab "Admin" (app/(tabs)/admin.tsx) with two sections:
+  - Database: "Eksporter database" (GET /api/admin/export -> writes JSON
+    file via expo-file-system's new File/Paths API -> shares via
+    expo-sharing) and "Importer database" (expo-document-picker -> reads
+    JSON -> confirm bottom sheet warns of full overwrite -> POST
+    /api/admin/import, which replaces all collections: dragons, task_items,
+    times, schedule_slots, completions, app_settings).
+  - Banner: pick + crop an image (expo-image-picker, aspect 16:9) and an
+    optional overlay text, saved via PUT /api/admin/settings. New
+    AdminSettingsContext (root-level provider) + PageBanner component
+    (renders image+overlay text at top of every screen if configured, else
+    renders nothing) - inserted into all 5 tab screens.
+- New backend collection `app_settings` (singleton doc keyed by
+  "app_settings_singleton") for banner_image_base64/banner_text.
+- Packages added: expo-document-picker, expo-sharing (expo-file-system v19
+  already present, using new File/Paths class API).
+
 ## Prioritized backlog / next tasks
 - P1: Push/local notification deep-testing on a real Android device (Expo Go
   limitations for background/killed app state).
 - P1: Investigate/fix cosmetic text-node warning in schedule-slot-form.
 - P2: Optional automatic age-category suggestion based on birthday (user
   declined for v1, manual only).
-- P2: Cloud backup/sync of MongoDB data (explicitly deferred by user for v1).
 - P2: Weekly plan duplication ("copy Monday's plan to all days") to speed up
   setup for multiple age categories.

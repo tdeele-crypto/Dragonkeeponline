@@ -68,3 +68,21 @@ export interface DailyOverview {
   day_of_week: DayOfWeek;
   dragons: OverviewDragon[];
 }
+
+export interface AppSettings {
+  id: string;
+  banner_image_base64?: string | null;
+  banner_text?: string | null;
+  updated_at: string;
+}
+
+export interface DatabaseExport {
+  version: number;
+  exported_at: string;
+  dragons: any[];
+  task_items: any[];
+  times: any[];
+  schedule_slots: any[];
+  completions: any[];
+  app_settings: any[];
+}

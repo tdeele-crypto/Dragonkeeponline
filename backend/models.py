@@ -98,3 +98,14 @@ class CompletionToggle(BaseModel):
     dragon_id: str
     schedule_slot_id: str
     date: str
+
+
+class AppSettings(BaseDocument):
+    banner_image_base64: Optional[str] = None
+    banner_text: Optional[str] = None
+    updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class AppSettingsUpdate(BaseModel):
+    banner_image_base64: Optional[str] = None
+    banner_text: Optional[str] = None

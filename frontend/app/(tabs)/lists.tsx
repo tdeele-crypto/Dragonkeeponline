@@ -25,6 +25,7 @@ import {
   cancelAllNotifications,
   isNotificationsAvailable,
 } from '@/utils/notifications';
+import PageBanner from '@/components/PageBanner';
 import type { TaskItem, TimeSlot, Dragon, ScheduleSlot } from '@/types';
 
 type ListKey = 'tider' | 'fodring' | 'pleje' | 'lys';
@@ -153,8 +154,9 @@ export default function ListsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <PageBanner />
       <View style={styles.header}>
-        <Text style={styles.title}>Lister</Text>
+        <Text style={styles.title}>Opgaver</Text>
       </View>
 
       <ScrollView

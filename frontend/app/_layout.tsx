@@ -6,6 +6,7 @@ import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { OverlayProvider } from "@/context/OverlayContext";
+import { AdminSettingsProvider } from "@/context/AdminSettingsContext";
 import { ensureNotificationChannel } from "@/utils/notifications";
 
 
@@ -39,12 +40,14 @@ export default function RootLayout() {
   return (
     <SafeAreaProvider>
       <OverlayProvider>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="(tabs)" />
-          <Stack.Screen name="dragon-form" options={{ presentation: "modal" }} />
-          <Stack.Screen name="schedule-slot-form" options={{ presentation: "modal" }} />
-          <Stack.Screen name="list-item-form" options={{ presentation: "modal" }} />
-        </Stack>
+        <AdminSettingsProvider>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="(tabs)" />
+            <Stack.Screen name="dragon-form" options={{ presentation: "modal" }} />
+            <Stack.Screen name="schedule-slot-form" options={{ presentation: "modal" }} />
+            <Stack.Screen name="list-item-form" options={{ presentation: "modal" }} />
+          </Stack>
+        </AdminSettingsProvider>
       </OverlayProvider>
     </SafeAreaProvider>
   );

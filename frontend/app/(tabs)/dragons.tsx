@@ -16,6 +16,7 @@ import { AGE_CATEGORIES, MAX_DRAGONS } from '@/constants/data';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import DragonAvatar from '@/components/DragonAvatar';
+import PageBanner from '@/components/PageBanner';
 import type { Dragon } from '@/types';
 
 export default function DragonsScreen() {
@@ -72,6 +73,7 @@ export default function DragonsScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <PageBanner />
       <View style={styles.header}>
         <Text style={styles.title}>Agamer</Text>
         <Text style={styles.count}>{dragons.length} / {MAX_DRAGONS}</Text>

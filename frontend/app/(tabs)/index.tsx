@@ -17,6 +17,7 @@ import { formatDateISO, formatFullDateDanish, isSameDay } from '@/constants/data
 import { api } from '@/utils/api';
 import { useToast } from '@/context/OverlayContext';
 import DragonColumn from '@/components/DragonColumn';
+import PageBanner from '@/components/PageBanner';
 import type { DailyOverview } from '@/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
@@ -96,6 +97,7 @@ export default function DagsoversigtScreen() {
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
+      <PageBanner />
       <View style={styles.header}>
         <Text style={styles.title}>Dagsoversigt</Text>
         {!isToday && (
