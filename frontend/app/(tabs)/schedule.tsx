@@ -15,6 +15,7 @@ import { COLORS } from '@/constants/colors';
 import { AGE_CATEGORIES, DAYS_OF_WEEK, DAY_LABELS, DAY_LABELS_SHORT } from '@/constants/data';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import CategoryBadge from '@/components/CategoryBadge';
 import PageBanner from '@/components/PageBanner';
 import type { AgeCategory, DayOfWeek, ScheduleSlot, TaskItem, TimeSlot } from '@/types';
@@ -23,6 +24,7 @@ export default function ScheduleScreen() {
   const router = useRouter();
   const showToast = useToast();
   const showConfirm = useConfirm();
+  const { appBgColor, pageTitleColor } = useAdminSettings();
 
   const [ageCategory, setAgeCategory] = useState<AgeCategory>('2-4');
   const [dayOfWeek, setDayOfWeek] = useState<DayOfWeek>('mandag');
@@ -92,10 +94,10 @@ export default function ScheduleScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={styles.title}>Ugeplaner</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Ugeplaner</Text>
       </View>
 
       <ScrollView

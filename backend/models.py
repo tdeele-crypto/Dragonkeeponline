@@ -135,6 +135,8 @@ class AppSettings(BaseDocument):
     banner_text: Optional[str] = None
     banner_bg_color: Optional[str] = None
     heading_color: Optional[str] = None
+    app_bg_color: Optional[str] = None
+    page_title_color: Optional[str] = None
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -143,3 +145,5 @@ class AppSettingsUpdate(BaseModel):
     banner_text: Optional[str] = None
     banner_bg_color: Optional[str] = None
     heading_color: Optional[str] = None
+    app_bg_color: Optional[str] = None
+    page_title_color: Optional[str] = None

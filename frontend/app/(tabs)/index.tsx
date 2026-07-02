@@ -16,6 +16,7 @@ import { COLORS } from '@/constants/colors';
 import { formatDateISO, formatFullDateDanish, isSameDay } from '@/constants/data';
 import { api } from '@/utils/api';
 import { useToast } from '@/context/OverlayContext';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import DragonColumn from '@/components/DragonColumn';
 import PageBanner from '@/components/PageBanner';
 import type { DailyOverview } from '@/types';
@@ -26,6 +27,7 @@ const COLUMN_WIDTH = Math.min(SCREEN_WIDTH - 40, 360);
 export default function DagsoversigtScreen() {
   const router = useRouter();
   const showToast = useToast();
+  const { appBgColor, pageTitleColor } = useAdminSettings();
   const [date, setDate] = useState(new Date());
   const [overview, setOverview] = useState<DailyOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -96,10 +98,10 @@ export default function DagsoversigtScreen() {
   const isToday = isSameDay(date, new Date());
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={styles.title}>Dagsoversigt</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Dagsoversigt</Text>
         {!isToday && (
           <TouchableOpacity style={styles.todayBtn} onPress={goToday} testID="overview-today-button">
             <Text style={styles.todayBtnText}>I dag</Text>

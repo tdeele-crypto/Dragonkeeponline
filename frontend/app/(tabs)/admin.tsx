@@ -38,7 +38,8 @@ const SWATCH_COLORS = [
 export default function AdminScreen() {
   const showToast = useToast();
   const showConfirm = useConfirm();
-  const { bannerImage, bannerText, bannerBgColor, headingColor, refresh } = useAdminSettings();
+  const { bannerImage, bannerText, bannerBgColor, headingColor, appBgColor, pageTitleColor, refresh } =
+    useAdminSettings();
 
   const [localImage, setLocalImage] = useState<string | null>(null);
   const [localText, setLocalText] = useState('');
@@ -48,12 +49,21 @@ export default function AdminScreen() {
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
 
+  const [localAppBgColor, setLocalAppBgColor] = useState<string | null>(null);
+  const [localPageTitleColor, setLocalPageTitleColor] = useState<string | null>(null);
+  const [savingAppearance, setSavingAppearance] = useState(false);
+
   useEffect(() => {
     setLocalImage(bannerImage);
     setLocalText(bannerText);
     setLocalBgColor(bannerBgColor);
     setLocalHeadingColor(headingColor);
   }, [bannerImage, bannerText, bannerBgColor, headingColor]);
+
+  useEffect(() => {
+    setLocalAppBgColor(appBgColor);
+    setLocalPageTitleColor(pageTitleColor);
+  }, [appBgColor, pageTitleColor]);
 
   const pickBannerImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -93,6 +103,22 @@ export default function AdminScreen() {
 
   const handleRemoveBannerImage = () => {
     setLocalImage(null);
+  };
+
+  const handleSaveAppearance = async () => {
+    setSavingAppearance(true);
+    try {
+      await api.put('/admin/settings', {
+        app_bg_color: localAppBgColor,
+        page_title_color: localPageTitleColor,
+      });
+      await refresh();
+      showToast('Udseende gemt', 'success');
+    } catch (e: any) {
+      showToast(e.message || 'Kunne ikke gemme udseende', 'error');
+    } finally {
+      setSavingAppearance(false);
+    }
   };
 
   const handleExport = async () => {
@@ -158,10 +184,10 @@ export default function AdminScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={styles.title}>Admin</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Admin</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
@@ -314,6 +340,98 @@ export default function AdminScreen() {
             testID="admin-banner-save-button"
           >
             {savingBanner ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>Gem banner</Text>}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>App-udseende</Text>
+          <Text style={styles.sectionSubtitle}>
+            Vælg appens baggrundsfarve (bag sideoverskrifterne) og tekstfarven på titlerne &quot;Dagsoversigt&quot;, &quot;Agamer&quot;, &quot;Ugeplaner&quot; osv.
+          </Text>
+
+          <View style={styles.appearancePreview} testID="admin-appearance-preview">
+            <View
+              style={[
+                styles.appearancePreviewBg,
+                localAppBgColor ? { backgroundColor: localAppBgColor } : null,
+              ]}
+            >
+              <Text
+                style={[
+                  styles.appearancePreviewTitle,
+                  localPageTitleColor ? { color: localPageTitleColor } : null,
+                ]}
+              >
+                Agamer
+              </Text>
+            </View>
+          </View>
+
+          <Text style={styles.label}>App-baggrundsfarve</Text>
+          <View style={styles.swatchRow}>
+            <TouchableOpacity
+              style={[styles.swatchNone, !localAppBgColor && styles.swatchSelected]}
+              onPress={() => setLocalAppBgColor(null)}
+              testID="admin-app-bg-color-none"
+            >
+              <Ionicons name="close" size={16} color={COLORS.textMuted} />
+            </TouchableOpacity>
+            {SWATCH_COLORS.map((color) => (
+              <TouchableOpacity
+                key={`app-bg-${color}`}
+                style={[
+                  styles.swatch,
+                  { backgroundColor: color },
+                  localAppBgColor === color && styles.swatchSelected,
+                ]}
+                onPress={() => setLocalAppBgColor(color)}
+                testID={`admin-app-bg-color-${color}`}
+              >
+                {localAppBgColor === color && (
+                  <Ionicons name="checkmark" size={16} color={color === '#FFFFFF' ? COLORS.textPrimary : COLORS.white} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <Text style={styles.label}>Sideoverskrift-farve</Text>
+          <View style={styles.swatchRow}>
+            <TouchableOpacity
+              style={[styles.swatchNone, !localPageTitleColor && styles.swatchSelected]}
+              onPress={() => setLocalPageTitleColor(null)}
+              testID="admin-page-title-color-none"
+            >
+              <Ionicons name="close" size={16} color={COLORS.textMuted} />
+            </TouchableOpacity>
+            {SWATCH_COLORS.map((color) => (
+              <TouchableOpacity
+                key={`page-title-${color}`}
+                style={[
+                  styles.swatch,
+                  { backgroundColor: color },
+                  localPageTitleColor === color && styles.swatchSelected,
+                ]}
+                onPress={() => setLocalPageTitleColor(color)}
+                testID={`admin-page-title-color-${color}`}
+              >
+                {localPageTitleColor === color && (
+                  <Ionicons name="checkmark" size={16} color={color === '#FFFFFF' ? COLORS.textPrimary : COLORS.white} />
+                )}
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveBtn, savingAppearance && styles.saveBtnDisabled]}
+            onPress={handleSaveAppearance}
+            disabled={savingAppearance}
+            testID="admin-appearance-save-button"
+          >
+            {savingAppearance ? (
+              <ActivityIndicator color={COLORS.white} />
+            ) : (
+              <Text style={styles.saveBtnText}>Gem udseende</Text>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -474,6 +592,22 @@ const styles = StyleSheet.create({
   swatchSelected: {
     borderWidth: 2,
     borderColor: COLORS.primary,
+  },
+  appearancePreview: {
+    marginBottom: 16,
+  },
+  appearancePreviewBg: {
+    backgroundColor: COLORS.background,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 16,
+    paddingVertical: 22,
+  },
+  appearancePreviewTitle: {
+    fontSize: 22,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
   },
   label: {
     fontSize: 13,

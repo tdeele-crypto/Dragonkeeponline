@@ -15,6 +15,7 @@ import { COLORS } from '@/constants/colors';
 import { AGE_CATEGORIES, MAX_DRAGONS } from '@/constants/data';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import DragonAvatar from '@/components/DragonAvatar';
 import PageBanner from '@/components/PageBanner';
 import type { Dragon } from '@/types';
@@ -23,6 +24,7 @@ export default function DragonsScreen() {
   const router = useRouter();
   const showToast = useToast();
   const showConfirm = useConfirm();
+  const { appBgColor, pageTitleColor } = useAdminSettings();
   const [dragons, setDragons] = useState<Dragon[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -72,10 +74,10 @@ export default function DragonsScreen() {
   const canAddMore = dragons.length < MAX_DRAGONS;
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={styles.title}>Agamer</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Agamer</Text>
         <Text style={styles.count}>{dragons.length} / {MAX_DRAGONS}</Text>
       </View>
 

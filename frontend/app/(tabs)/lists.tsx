@@ -15,6 +15,7 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import {
   getNotificationsEnabled,
   setNotificationsEnabled as persistNotificationsEnabled,
@@ -41,6 +42,7 @@ export default function ListsScreen() {
   const router = useRouter();
   const showToast = useToast();
   const showConfirm = useConfirm();
+  const { appBgColor, pageTitleColor } = useAdminSettings();
   const [activeTab, setActiveTab] = useState<ListKey>('tider');
   const [times, setTimes] = useState<TimeSlot[]>([]);
   const [items, setItems] = useState<TaskItem[]>([]);
@@ -167,10 +169,10 @@ export default function ListsScreen() {
   const filteredItems = items.filter((i) => i.category === activeTab);
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
+    <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={styles.title}>Opgaver</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Opgaver</Text>
       </View>
 
       <ScrollView

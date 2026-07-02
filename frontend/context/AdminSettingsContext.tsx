@@ -6,6 +6,8 @@ interface AdminSettingsValue {
   bannerText: string;
   bannerBgColor: string | null;
   headingColor: string | null;
+  appBgColor: string | null;
+  pageTitleColor: string | null;
   refresh: () => Promise<void>;
 }
 
@@ -16,6 +18,8 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
   const [bannerText, setBannerText] = useState('');
   const [bannerBgColor, setBannerBgColor] = useState<string | null>(null);
   const [headingColor, setHeadingColor] = useState<string | null>(null);
+  const [appBgColor, setAppBgColor] = useState<string | null>(null);
+  const [pageTitleColor, setPageTitleColor] = useState<string | null>(null);
 
   const refresh = useCallback(async () => {
     try {
@@ -24,6 +28,8 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
       setBannerText(data.banner_text || '');
       setBannerBgColor(data.banner_bg_color || null);
       setHeadingColor(data.heading_color || null);
+      setAppBgColor(data.app_bg_color || null);
+      setPageTitleColor(data.page_title_color || null);
     } catch (e) {
       // Banner is optional decoration - fail silently.
       console.log('Kunne ikke hente banner-indstillinger:', e);
@@ -35,7 +41,9 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
   }, [refresh]);
 
   return (
-    <AdminSettingsContext.Provider value={{ bannerImage, bannerText, bannerBgColor, headingColor, refresh }}>
+    <AdminSettingsContext.Provider
+      value={{ bannerImage, bannerText, bannerBgColor, headingColor, appBgColor, pageTitleColor, refresh }}
+    >
       {children}
     </AdminSettingsContext.Provider>
   );
