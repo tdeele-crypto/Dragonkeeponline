@@ -148,6 +148,25 @@ bruger opretter alt selv.
   array-længde mod fuld kategori-count i stedet for count-1, da nuværende
   dag/periode er udelukket fra selection-arrayet).
 
+## Feature additions (2026-07-02, session 6)
+- Ny "App-udseende" sektion i Admin (under Banner-sektionen) med to
+  farve-swatch vælgere: "App-baggrundsfarve" (app_bg_color - baggrunden på
+  alle 5 faner, bag sideoverskrifterne) og "Sideoverskrift-farve"
+  (page_title_color - tekstfarven på selve titlerne "Dagsoversigt",
+  "Agamer", "Ugeplaner", "Opgaver", "Admin"). Har egen live preview-boks og
+  egen "Gem udseende"-knap, uafhængig af Banner-sektionens gem-knap (sender
+  kun de 2 nye felter, påvirker ikke banner-indstillinger).
+- Backend: tilføjet app_bg_color + page_title_color til AppSettings/
+  AppSettingsUpdate i models.py (ingen andre backend-ændringer nødvendige).
+- AdminSettingsContext udvidet med appBgColor/pageTitleColor; alle 5
+  fane-skærme (index.tsx, dragons.tsx, lists.tsx, schedule.tsx, admin.tsx)
+  anvender nu betinget inline style-override på SafeAreaView baggrund og
+  titel-tekstfarve når disse er sat, med graceful fallback til standard
+  cremefarve/mørk tekst når ikke sat.
+- Tested via testing_agent_v4_expo: 21/21 backend tests (4 nye + 17
+  eksisterende regression), frontend bekræftet virker konsistent på alle 5
+  faner, none/reset-fallback virker, banner-indstillinger påvirkes ikke.
+
 ## Prioritized backlog / next tasks
 - P1: Push/local notification deep-testing on a real Android device (Expo Go
   limitations for background/killed app state).
