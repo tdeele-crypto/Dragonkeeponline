@@ -113,7 +113,9 @@ export default function DagsoversigtScreen() {
         <TouchableOpacity style={styles.navBtn} onPress={() => changeDay(-1)} testID="overview-prev-day-button">
           <Ionicons name="chevron-back" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.navLabel}>{formatFullDateDanish(date)}</Text>
+        <Text style={[styles.navLabel, pageTitleColor ? { color: pageTitleColor } : null]}>
+          {formatFullDateDanish(date)}
+        </Text>
         <TouchableOpacity style={styles.navBtn} onPress={() => changeDay(1)} testID="overview-next-day-button">
           <Ionicons name="chevron-forward" size={22} color={COLORS.textPrimary} />
         </TouchableOpacity>

@@ -5,14 +5,9 @@ from models import Dragon, DragonCreate, DragonUpdate, compute_age_category
 
 router = APIRouter(prefix="/dragons", tags=["dragons"])
 
-MAX_DRAGONS = 5
-
 
 @router.post("", response_model=Dragon, response_model_by_alias=False)
 async def create_dragon(payload: DragonCreate):
-    count = await db.dragons.count_documents({})
-    if count >= MAX_DRAGONS:
-        raise HTTPException(status_code=400, detail=f"Maksimalt {MAX_DRAGONS} agamer er tilladt")
     data = payload.model_dump()
     data["age_category"] = compute_age_category(data["birthday"])
     dragon = Dragon(**data)

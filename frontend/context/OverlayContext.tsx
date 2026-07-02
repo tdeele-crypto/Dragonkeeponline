@@ -15,6 +15,9 @@ interface ConfirmState {
   cancelLabel?: string;
   destructive?: boolean;
   onConfirm: () => void;
+  secondaryLabel?: string;
+  onSecondaryConfirm?: () => void;
+  secondaryDestructive?: boolean;
 }
 
 interface OverlayContextValue {
@@ -73,25 +76,61 @@ export function OverlayProvider({ children }: { children: React.ReactNode }) {
           <View style={styles.confirmBox} testID="confirm-sheet">
             <Text style={styles.confirmTitle}>{confirm?.title}</Text>
             {confirm?.message ? <Text style={styles.confirmMessage}>{confirm.message}</Text> : null}
-            <View style={styles.confirmActions}>
-              <TouchableOpacity
-                style={[styles.confirmBtn, styles.cancelBtn]}
-                onPress={closeConfirm}
-                testID="confirm-sheet-cancel-button"
-              >
-                <Text style={styles.cancelBtnText}>{confirm?.cancelLabel || 'Annuller'}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.confirmBtn, confirm?.destructive ? styles.destructiveBtn : styles.primaryBtn]}
-                onPress={() => {
-                  confirm?.onConfirm();
-                  closeConfirm();
-                }}
-                testID="confirm-sheet-confirm-button"
-              >
-                <Text style={styles.confirmBtnText}>{confirm?.confirmLabel || 'Bekræft'}</Text>
-              </TouchableOpacity>
-            </View>
+            {confirm?.onSecondaryConfirm ? (
+              <View style={styles.confirmActionsColumn}>
+                <TouchableOpacity
+                  style={[styles.confirmBtn, styles.confirmBtnFull, confirm?.destructive ? styles.destructiveBtn : styles.primaryBtn]}
+                  onPress={() => {
+                    confirm?.onConfirm();
+                    closeConfirm();
+                  }}
+                  testID="confirm-sheet-confirm-button"
+                >
+                  <Text style={styles.confirmBtnText}>{confirm?.confirmLabel || 'Bekræft'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.confirmBtn,
+                    styles.confirmBtnFull,
+                    confirm?.secondaryDestructive ? styles.destructiveBtn : styles.primaryBtn,
+                  ]}
+                  onPress={() => {
+                    confirm?.onSecondaryConfirm?.();
+                    closeConfirm();
+                  }}
+                  testID="confirm-sheet-secondary-button"
+                >
+                  <Text style={styles.confirmBtnText}>{confirm?.secondaryLabel}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.confirmBtn, styles.confirmBtnFull, styles.cancelBtn]}
+                  onPress={closeConfirm}
+                  testID="confirm-sheet-cancel-button"
+                >
+                  <Text style={styles.cancelBtnText}>{confirm?.cancelLabel || 'Annuller'}</Text>
+                </TouchableOpacity>
+              </View>
+            ) : (
+              <View style={styles.confirmActions}>
+                <TouchableOpacity
+                  style={[styles.confirmBtn, styles.cancelBtn]}
+                  onPress={closeConfirm}
+                  testID="confirm-sheet-cancel-button"
+                >
+                  <Text style={styles.cancelBtnText}>{confirm?.cancelLabel || 'Annuller'}</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.confirmBtn, confirm?.destructive ? styles.destructiveBtn : styles.primaryBtn]}
+                  onPress={() => {
+                    confirm?.onConfirm();
+                    closeConfirm();
+                  }}
+                  testID="confirm-sheet-confirm-button"
+                >
+                  <Text style={styles.confirmBtnText}>{confirm?.confirmLabel || 'Bekræft'}</Text>
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         </View>
       </Modal>
@@ -171,6 +210,12 @@ const styles = StyleSheet.create({
   confirmActions: {
     flexDirection: 'row',
     gap: 12,
+  },
+  confirmActionsColumn: {
+    gap: 10,
+  },
+  confirmBtnFull: {
+    width: '100%',
   },
   confirmBtn: {
     flex: 1,

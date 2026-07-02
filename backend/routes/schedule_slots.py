@@ -79,13 +79,32 @@ async def update_schedule_slot(slot_id: str, payload: ScheduleSlotUpdate):
 
 
 @router.delete("/{slot_id}")
-async def delete_schedule_slot(slot_id: str):
+async def delete_schedule_slot(slot_id: str, all_days: bool = Query(default=False)):
     try:
         oid = to_object_id(slot_id)
     except ValueError:
         raise HTTPException(status_code=400, detail="Ugyldigt id")
+    slot = await db.schedule_slots.find_one({"_id": oid})
+    if not slot:
+        raise HTTPException(status_code=404, detail="Task ikke fundet")
+
+    if all_days:
+        # Slet denne opgave for alle ugedage hvor samme opgave (alderskategori +
+        # tidspunkt + kategori) er oprettet på samme tid.
+        matching = await db.schedule_slots.find({
+            "age_category": slot["age_category"],
+            "time_id": slot["time_id"],
+            "category": slot["category"],
+        }).to_list(1000)
+        ids = [m["_id"] for m in matching]
+        str_ids = [str(i) for i in ids]
+        await db.schedule_slots.delete_many({"_id": {"$in": ids}})
+        if str_ids:
+            await db.completions.delete_many({"schedule_slot_id": {"$in": str_ids}})
+        return {"success": True, "deleted_count": len(ids)}
+
     result = await db.schedule_slots.delete_one({"_id": oid})
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Task ikke fundet")
     await db.completions.delete_many({"schedule_slot_id": slot_id})
-    return {"success": True}
+    return {"success": True, "deleted_count": 1}

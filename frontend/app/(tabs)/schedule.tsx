@@ -77,14 +77,26 @@ export default function ScheduleScreen() {
 
   const handleDeleteSlot = (slot: ScheduleSlot) => {
     showConfirm({
-      title: 'Slet denne opgave?',
-      message: 'Opgaven fjernes fra ugeplanen for denne dag og alderskategori.',
-      confirmLabel: 'Slet',
+      title: 'Slet opgave',
+      message: 'Skal opgaven kun slettes for denne dag, eller for alle ugedage hvor samme opgave er oprettet på samme tidspunkt?',
+      confirmLabel: 'Slet kun denne dag',
+      secondaryLabel: 'Slet for alle ugedage',
+      cancelLabel: 'Annuller',
       destructive: true,
+      secondaryDestructive: true,
       onConfirm: async () => {
         try {
           await api.delete(`/schedule-slots/${slot.id}`);
           showToast('Opgave slettet', 'success');
+          fetchData(false);
+        } catch (e: any) {
+          showToast(e.message || 'Kunne ikke slette opgave', 'error');
+        }
+      },
+      onSecondaryConfirm: async () => {
+        try {
+          const res = await api.delete(`/schedule-slots/${slot.id}?all_days=true`);
+          showToast(`Opgave slettet for ${res?.deleted_count || 'alle'} ugedage`, 'success');
           fetchData(false);
         } catch (e: any) {
           showToast(e.message || 'Kunne ikke slette opgave', 'error');
@@ -272,8 +284,8 @@ const styles = StyleSheet.create({
     flexShrink: 0,
   },
   dayChipActive: {
-    backgroundColor: COLORS.textPrimary,
-    borderColor: COLORS.textPrimary,
+    backgroundColor: '#D9D6D2',
+    borderColor: '#B8B4AF',
   },
   dayChipText: {
     fontSize: 12,
@@ -281,7 +293,7 @@ const styles = StyleSheet.create({
     color: COLORS.textSecondary,
   },
   dayChipTextActive: {
-    color: COLORS.white,
+    color: COLORS.textPrimary,
   },
   sectionLabel: {
     fontSize: 12,

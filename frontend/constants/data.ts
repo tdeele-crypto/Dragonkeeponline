@@ -1,7 +1,5 @@
 import type { AgeCategory, DayOfWeek, Gender, TaskCategory } from '@/types';
 
-export const MAX_DRAGONS = 5;
-
 export const AGE_CATEGORIES: { value: AgeCategory; label: string }[] = [
   { value: '2-4', label: '2-4 måneder' },
   { value: '4-7', label: '4-7 måneder' },

@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { AGE_CATEGORIES, MAX_DRAGONS } from '@/constants/data';
+import { AGE_CATEGORIES } from '@/constants/data';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
@@ -71,14 +71,14 @@ export default function DragonsScreen() {
     });
   };
 
-  const canAddMore = dragons.length < MAX_DRAGONS;
-
   return (
     <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
         <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Agamer</Text>
-        <Text style={styles.count}>{dragons.length} / {MAX_DRAGONS}</Text>
+        <Text style={styles.count} testID="dragons-count">
+          {dragons.length} af {dragons.length}
+        </Text>
       </View>
 
       {loading ? (
@@ -131,15 +131,13 @@ export default function DragonsScreen() {
         </ScrollView>
       )}
 
-      {canAddMore && (
-        <TouchableOpacity
-          style={styles.fab}
-          onPress={() => router.push('/dragon-form')}
-          testID="add-dragon-fab"
-        >
-          <Ionicons name="add" size={28} color={COLORS.white} />
-        </TouchableOpacity>
-      )}
+      <TouchableOpacity
+        style={styles.fab}
+        onPress={() => router.push('/dragon-form')}
+        testID="add-dragon-fab"
+      >
+        <Ionicons name="add" size={28} color={COLORS.white} />
+      </TouchableOpacity>
     </SafeAreaView>
   );
 }

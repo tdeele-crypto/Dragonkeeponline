@@ -4,6 +4,7 @@ import DragonAvatar from '@/components/DragonAvatar';
 import TaskRow from '@/components/TaskRow';
 import { COLORS } from '@/constants/colors';
 import { AGE_CATEGORIES } from '@/constants/data';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import type { OverviewDragon } from '@/types';
 
 interface DragonColumnProps {
@@ -13,6 +14,7 @@ interface DragonColumnProps {
 }
 
 export default function DragonColumn({ dragon, width, onToggleTask }: DragonColumnProps) {
+  const { pageTitleColor } = useAdminSettings();
   const ageLabel = AGE_CATEGORIES.find((a) => a.value === dragon.age_category)?.label || dragon.age_category;
   const doneCount = dragon.tasks.filter((t) => t.completed || t.is_automatic).length;
 
@@ -21,7 +23,11 @@ export default function DragonColumn({ dragon, width, onToggleTask }: DragonColu
       <View style={styles.header}>
         <DragonAvatar photoBase64={dragon.photo_base64} size={52} />
         <View style={styles.headerText}>
-          <Text style={styles.name} numberOfLines={1} testID={`dragon-column-name-${dragon.dragon_id}`}>
+          <Text
+            style={[styles.name, pageTitleColor ? { color: pageTitleColor } : null]}
+            numberOfLines={1}
+            testID={`dragon-column-name-${dragon.dragon_id}`}
+          >
             {dragon.name}
           </Text>
           <View style={styles.ageBadge}>
@@ -31,7 +37,10 @@ export default function DragonColumn({ dragon, width, onToggleTask }: DragonColu
       </View>
 
       {dragon.tasks.length > 0 && (
-        <Text style={styles.progress} testID={`dragon-column-progress-${dragon.dragon_id}`}>
+        <Text
+          style={[styles.progress, pageTitleColor ? { color: pageTitleColor } : null]}
+          testID={`dragon-column-progress-${dragon.dragon_id}`}
+        >
           {doneCount} af {dragon.tasks.length} udført
         </Text>
       )}
