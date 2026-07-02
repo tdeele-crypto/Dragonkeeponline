@@ -185,6 +185,29 @@ bruger opretter alt selv.
 - Tested via testing_agent_v4_expo: 3/3 nye backend-tests + fuld
   regression, alt bekræftet virker.
 
+## Feature additions (2026-07-02, session 8)
+- Vægtregistrering per agame: nyt vægt-ikon (skala) på hvert agame-kort i
+  Agamer-fanen, før rediger/slet-ikonerne. Åbner en ny modal-skærm
+  (/dragon-weight) med: sidste registrerede vægt, formular til at
+  registrere ny vægt (gram) + valgfri note + dato, en linjegraf
+  (react-native-gifted-charts) over de sidste 12 måneders målinger, og en
+  liste over alle tidligere målinger (nyeste først) med noter og
+  slet-mulighed.
+- Backend: ny collection `weight_entries` {id, dragon_id, weight_grams,
+  note, date, created_at}. Nye endpoints: POST/GET
+  /api/dragons/{id}/weights, DELETE /api/weights/{id}. Cascade-delete af
+  vægtdata når en agame slettes. Admin export/import inkluderer nu også
+  weight_entries.
+- Ny dependency installeret: react-native-gifted-charts + react-native-svg
+  (via yarn expo install).
+- Tested via testing_agent_v4_expo: 33/33 backend tests (8 nye +
+  regression-fix af en forældet MAX_DRAGONS-test), fuld frontend-flow
+  bekræftet inkl. graf-rendering.
+- Kendt begrænsning (ikke unikt for denne feature, gælder også
+  fødselsdag/tidspunkt-vælgere andre steder i appen): @react-native-
+  community/datetimepicker understøtter ikke web-preview - datovælgeren
+  virker fint på Android/iOS, men ikke i browser-preview.
+
 ## Prioritized backlog / next tasks
 - P1: Push/local notification deep-testing on a real Android device (Expo Go
   limitations for background/killed app state).
