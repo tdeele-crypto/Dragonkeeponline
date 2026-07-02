@@ -1,12 +1,33 @@
 from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
-from datetime import datetime, UTC
+from datetime import datetime, UTC, date as date_cls
 from database import BaseDocument
 
 AgeCategory = Literal["2-4", "4-7", "7-12", "12+"]
 TaskCategory = Literal["fodring", "pleje", "lys"]
 DayOfWeek = Literal["mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag", "søndag"]
 Gender = Literal["Han", "Hun", "Ukendt"]
+
+
+def compute_age_category(birthday: str) -> AgeCategory:
+    """Beregner alderskategori automatisk ud fra fødselsdato (YYYY-MM-DD)."""
+    try:
+        y, m, d = map(int, birthday.split("-"))
+        born = date_cls(y, m, d)
+    except (ValueError, AttributeError):
+        return "2-4"
+    today = date_cls.today()
+    months = (today.year - born.year) * 12 + (today.month - born.month)
+    if today.day < born.day:
+        months -= 1
+    months = max(months, 0)
+    if months < 4:
+        return "2-4"
+    if months < 7:
+        return "4-7"
+    if months < 12:
+        return "7-12"
+    return "12+"
 
 
 class Dragon(BaseDocument):
@@ -26,7 +47,6 @@ class DragonCreate(BaseModel):
     color: str
     morph: str
     birthday: str
-    age_category: AgeCategory
     photo_base64: Optional[str] = None
 
 
@@ -36,7 +56,6 @@ class DragonUpdate(BaseModel):
     color: Optional[str] = None
     morph: Optional[str] = None
     birthday: Optional[str] = None
-    age_category: Optional[AgeCategory] = None
     photo_base64: Optional[str] = None
 
 
@@ -86,6 +105,15 @@ class ScheduleSlotUpdate(BaseModel):
     category: Optional[TaskCategory] = None
     item_ids: Optional[List[str]] = None
     is_automatic: Optional[bool] = None
+
+
+class ScheduleSlotBulkCopy(BaseModel):
+    day_of_weeks: List[DayOfWeek]
+    age_categories: List[AgeCategory]
+    time_id: str
+    category: TaskCategory
+    item_ids: List[str] = []
+    is_automatic: bool = False
 
 
 class Completion(BaseDocument):

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
@@ -16,7 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '@/constants/colors';
-import { AGE_CATEGORIES, GENDERS } from '@/constants/data';
+import { AGE_CATEGORIES, GENDERS, computeAgeCategory } from '@/constants/data';
 import { api } from '@/utils/api';
 import { useToast } from '@/context/OverlayContext';
 import FormField from '@/components/FormField';
@@ -38,11 +38,9 @@ export default function DragonFormScreen() {
   const [color, setColor] = useState('');
   const [morph, setMorph] = useState('');
   const [birthday, setBirthday] = useState<Date>(new Date());
-  const [ageCategory, setAgeCategory] = useState('');
   const [photo, setPhoto] = useState<string | null>(null);
 
   const [genderSheetVisible, setGenderSheetVisible] = useState(false);
-  const [ageSheetVisible, setAgeSheetVisible] = useState(false);
   const [photoSheetVisible, setPhotoSheetVisible] = useState(false);
   const [showDatePicker, setShowDatePicker] = useState(false);
 
@@ -56,13 +54,15 @@ export default function DragonFormScreen() {
           setColor(d.color);
           setMorph(d.morph);
           setBirthday(new Date(d.birthday));
-          setAgeCategory(d.age_category);
           setPhoto(d.photo_base64 || null);
         })
         .catch((e: any) => showToast(e.message || 'Kunne ikke hente agame', 'error'))
         .finally(() => setLoading(false));
     }
   }, [id, isEdit, showToast]);
+
+  const computedAgeCategory = useMemo(() => computeAgeCategory(birthday), [birthday]);
+  const computedAgeLabel = AGE_CATEGORIES.find((a) => a.value === computedAgeCategory)?.label;
 
   const pickPhoto = async (source: string[]) => {
     const isCamera = source[0] === 'camera';
@@ -89,7 +89,7 @@ export default function DragonFormScreen() {
   };
 
   const handleSave = async () => {
-    if (!name.trim() || !gender || !color.trim() || !morph.trim() || !ageCategory) {
+    if (!name.trim() || !gender || !color.trim() || !morph.trim()) {
       showToast('Udfyld venligst alle felter', 'error');
       return;
     }
@@ -100,7 +100,6 @@ export default function DragonFormScreen() {
       color: color.trim(),
       morph: morph.trim(),
       birthday: birthday.toISOString().split('T')[0],
-      age_category: ageCategory,
       photo_base64: photo,
     };
     try {
@@ -181,13 +180,11 @@ export default function DragonFormScreen() {
             icon="calendar-outline"
           />
 
-          <PickerField
-            label="Alderskategori"
-            value={AGE_CATEGORIES.find((a) => a.value === ageCategory)?.label || ''}
-            placeholder="Vælg alderskategori"
-            onPress={() => setAgeSheetVisible(true)}
-            testID="dragon-form-age-category-picker"
-          />
+          <Text style={styles.label}>Alderskategori (beregnes automatisk)</Text>
+          <View style={styles.ageAutoBox} testID="dragon-form-age-category-computed">
+            <Ionicons name="hourglass-outline" size={16} color={COLORS.primaryDark} />
+            <Text style={styles.ageAutoText}>{computedAgeLabel}</Text>
+          </View>
 
           <TouchableOpacity
             style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
@@ -225,16 +222,6 @@ export default function DragonFormScreen() {
         onSelect={(v) => setGender(v[0])}
         onClose={() => setGenderSheetVisible(false)}
         testIDPrefix="dragon-form-gender-sheet"
-      />
-
-      <SelectSheet
-        visible={ageSheetVisible}
-        title="Vælg alderskategori"
-        options={AGE_CATEGORIES}
-        selected={ageCategory ? [ageCategory] : []}
-        onSelect={(v) => setAgeCategory(v[0])}
-        onClose={() => setAgeSheetVisible(false)}
-        testIDPrefix="dragon-form-age-sheet"
       />
 
       <SelectSheet
@@ -320,6 +307,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     borderWidth: 3,
     borderColor: COLORS.background,
+  },
+  label: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+    marginBottom: 8,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  ageAutoBox: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 14,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    marginBottom: 16,
+  },
+  ageAutoText: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
   },
   saveBtn: {
     backgroundColor: COLORS.primary,

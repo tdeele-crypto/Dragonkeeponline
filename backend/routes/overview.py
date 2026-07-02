@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from datetime import date as date_cls, datetime, UTC
 from database import db
-from models import CompletionToggle, Completion
+from models import CompletionToggle, Completion, compute_age_category
 
 router = APIRouter(tags=["overview"])
 
@@ -28,8 +28,9 @@ async def get_daily_overview(date: str = Query(...)):
     result = []
     for dragon in dragons:
         dragon_id = str(dragon["_id"])
+        age_category = compute_age_category(dragon["birthday"])
         slots = await db.schedule_slots.find({
-            "age_category": dragon["age_category"],
+            "age_category": age_category,
             "day_of_week": day_of_week,
         }).to_list(1000)
         tasks = []
@@ -50,7 +51,7 @@ async def get_daily_overview(date: str = Query(...)):
             "dragon_id": dragon_id,
             "name": dragon["name"],
             "photo_base64": dragon.get("photo_base64"),
-            "age_category": dragon["age_category"],
+            "age_category": age_category,
             "tasks": tasks,
         })
 

@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Query
 from typing import List, Optional
 from database import db, to_object_id
-from models import ScheduleSlot, ScheduleSlotCreate, ScheduleSlotUpdate
+from models import ScheduleSlot, ScheduleSlotCreate, ScheduleSlotUpdate, ScheduleSlotBulkCopy
 
 router = APIRouter(prefix="/schedule-slots", tags=["schedule-slots"])
 
@@ -11,6 +11,41 @@ async def create_schedule_slot(payload: ScheduleSlotCreate):
     slot = ScheduleSlot(**payload.model_dump())
     await db.schedule_slots.insert_one(slot.to_mongo())
     return slot
+
+
+@router.post("/bulk-copy", response_model=List[ScheduleSlot], response_model_by_alias=False)
+async def bulk_copy_schedule_slots(payload: ScheduleSlotBulkCopy):
+    """Opret/opdater en opgave på tværs af flere ugedage og alderskategorier på én gang.
+    Findes der allerede en opgave med samme tidspunkt+kategori for en given
+    dag/alderskategori-kombination, bliver den overskrevet i stedet for duplikeret."""
+    results = []
+    for day in payload.day_of_weeks:
+        for age in payload.age_categories:
+            existing = await db.schedule_slots.find_one({
+                "age_category": age,
+                "day_of_week": day,
+                "time_id": payload.time_id,
+                "category": payload.category,
+            })
+            if existing:
+                await db.schedule_slots.update_one(
+                    {"_id": existing["_id"]},
+                    {"$set": {"item_ids": payload.item_ids, "is_automatic": payload.is_automatic}},
+                )
+                doc = await db.schedule_slots.find_one({"_id": existing["_id"]})
+                results.append(ScheduleSlot.from_mongo(doc))
+            else:
+                slot = ScheduleSlot(
+                    age_category=age,
+                    day_of_week=day,
+                    time_id=payload.time_id,
+                    category=payload.category,
+                    item_ids=payload.item_ids,
+                    is_automatic=payload.is_automatic,
+                )
+                await db.schedule_slots.insert_one(slot.to_mongo())
+                results.append(slot)
+    return results
 
 
 @router.get("", response_model=List[ScheduleSlot], response_model_by_alias=False)

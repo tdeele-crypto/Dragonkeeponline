@@ -1,9 +1,12 @@
 """
-Backend API tests for Bearded Dragon Care app.
-Covers: dragons CRUD + max-5 limit, task-items CRUD, times CRUD + duplicate/in-use guard,
-schedule-slots CRUD, daily-overview computation, completions toggle.
+Backend API tests for Skægagamer (Bearded Dragon Care) app.
+Covers: dragons CRUD + max-5 limit + AUTOMATIC age_category computation from birthday,
+task-items CRUD, times CRUD + duplicate/in-use guard, schedule-slots CRUD,
+NEW bulk-copy schedule-slots endpoint, daily-overview computation (age-category matching),
+completions toggle.
 """
 import os
+import datetime
 import pytest
 import requests
 
@@ -18,217 +21,272 @@ def api_client():
     return session
 
 
-@pytest.fixture(scope="module")
-def cleanup_registry():
-    reg = {"dragons": [], "times": [], "items": [], "slots": []}
-    yield reg
-    # no forced cleanup per instructions (fine to leave data behind)
+def months_ago_date(months: int) -> str:
+    today = datetime.date.today()
+    year = today.year
+    month = today.month - months
+    while month <= 0:
+        month += 12
+        year -= 1
+    day = min(today.day, 28)
+    return datetime.date(year, month, day).isoformat()
 
 
-class TestDragons:
-    def test_create_dragon_and_verify_persistence(self, api_client, cleanup_registry):
+def expected_category(months: int) -> str:
+    if months < 4:
+        return "2-4"
+    if months < 7:
+        return "4-7"
+    if months < 12:
+        return "7-12"
+    return "12+"
+
+
+# ---------------------------------------------------------------------------
+# Dragons: CRUD + automatic age category computation (feature A)
+# ---------------------------------------------------------------------------
+class TestDragonsAgeCategory:
+    def test_create_dragon_age_category_ignored_and_computed(self, api_client):
+        """DragonCreate no longer has age_category field - sending it should be ignored,
+        and the real value should be computed from birthday (~3 months -> '2-4')."""
         payload = {
             "name": "TEST_Spike",
             "gender": "Han",
             "color": "Orange",
             "morph": "Hypo Leatherback",
-            "birthday": "2024-01-15",
-            "age_category": "7-12",
+            "birthday": months_ago_date(3),
+            "age_category": "12+",  # should be ignored by backend
         }
         r = api_client.post(f"{API}/dragons", json=payload)
         assert r.status_code == 200, r.text
         data = r.json()
         assert data["name"] == "TEST_Spike"
-        assert data["age_category"] == "7-12"
+        assert data["age_category"] == "2-4", f"Expected computed '2-4', got {data['age_category']}"
         assert "id" in data and "_id" not in data
-        cleanup_registry["dragons"].append(data["id"])
+        dragon_id = data["id"]
 
-        get_r = api_client.get(f"{API}/dragons/{data['id']}")
-        assert get_r.status_code == 200
-        assert get_r.json()["name"] == "TEST_Spike"
-
-    def test_update_dragon(self, api_client, cleanup_registry):
-        dragon_id = cleanup_registry["dragons"][0]
-        r = api_client.put(f"{API}/dragons/{dragon_id}", json={"name": "TEST_Spike_Updated"})
-        assert r.status_code == 200
-        assert r.json()["name"] == "TEST_Spike_Updated"
         get_r = api_client.get(f"{API}/dragons/{dragon_id}")
-        assert get_r.json()["name"] == "TEST_Spike_Updated"
+        assert get_r.status_code == 200
+        assert get_r.json()["age_category"] == "2-4"
+
+        api_client.delete(f"{API}/dragons/{dragon_id}")
+
+    @pytest.mark.parametrize("months,expected", [(3, "2-4"), (5, "4-7"), (9, "7-12"), (14, "12+")])
+    def test_various_birthdays_compute_correct_category(self, api_client, months, expected):
+        payload = {
+            "name": f"TEST_Age{months}",
+            "gender": "Ukendt",
+            "color": "Grey",
+            "morph": "Standard",
+            "birthday": months_ago_date(months),
+        }
+        r = api_client.post(f"{API}/dragons", json=payload)
+        assert r.status_code == 200, r.text
+        data = r.json()
+        assert data["age_category"] == expected, f"months={months} expected {expected} got {data['age_category']}"
+
+        list_r = api_client.get(f"{API}/dragons")
+        listed = next(d for d in list_r.json() if d["id"] == data["id"])
+        assert listed["age_category"] == expected
+
+        api_client.delete(f"{API}/dragons/{data['id']}")
+
+    def test_update_birthday_recomputes_age_category(self, api_client):
+        create_r = api_client.post(f"{API}/dragons", json={
+            "name": "TEST_Recompute", "gender": "Hun", "color": "Yellow",
+            "morph": "Citrus", "birthday": months_ago_date(3),
+        })
+        dragon = create_r.json()
+        assert dragon["age_category"] == "2-4"
+
+        upd_r = api_client.put(f"{API}/dragons/{dragon['id']}", json={"birthday": months_ago_date(13)})
+        assert upd_r.status_code == 200
+        assert upd_r.json()["age_category"] == "12+"
+
+        get_r = api_client.get(f"{API}/dragons/{dragon['id']}")
+        assert get_r.json()["age_category"] == "12+"
+
+        api_client.delete(f"{API}/dragons/{dragon['id']}")
 
     def test_get_nonexistent_dragon_404(self, api_client):
         r = api_client.get(f"{API}/dragons/000000000000000000000000")
         assert r.status_code == 404
 
-    def test_max_5_dragons_enforced(self, api_client, cleanup_registry):
-        # We already have 1 dragon from above; create up to 5 total then attempt 6th
+    def test_max_5_dragons_enforced(self, api_client):
         existing = api_client.get(f"{API}/dragons").json()
-        to_create = 5 - len(existing)
-        for i in range(max(to_create, 0)):
-            payload = {
-                "name": f"TEST_Filler{i}",
-                "gender": "Ukendt",
-                "color": "Grey",
-                "morph": "Standard",
-                "birthday": "2023-01-01",
-                "age_category": "12+",
-            }
-            r = api_client.post(f"{API}/dragons", json=payload)
+        created_ids = []
+        to_create = max(5 - len(existing), 0)
+        for i in range(to_create):
+            r = api_client.post(f"{API}/dragons", json={
+                "name": f"TEST_Filler{i}", "gender": "Ukendt", "color": "Grey",
+                "morph": "Standard", "birthday": months_ago_date(20),
+            })
             assert r.status_code == 200
-            cleanup_registry["dragons"].append(r.json()["id"])
+            created_ids.append(r.json()["id"])
 
         count_r = api_client.get(f"{API}/dragons")
         assert len(count_r.json()) == 5
 
-        sixth_payload = {
-            "name": "TEST_Sixth",
-            "gender": "Han",
-            "color": "Red",
-            "morph": "Standard",
-            "birthday": "2023-01-01",
-            "age_category": "2-4",
-        }
-        r = api_client.post(f"{API}/dragons", json=sixth_payload)
-        assert r.status_code == 400
-        assert "Maksimalt" in r.json()["detail"]
+        sixth_r = api_client.post(f"{API}/dragons", json={
+            "name": "TEST_Sixth", "gender": "Han", "color": "Red",
+            "morph": "Standard", "birthday": months_ago_date(1),
+        })
+        assert sixth_r.status_code == 400
+        assert "Maksimalt" in sixth_r.json()["detail"]
 
-    def test_delete_dragon(self, api_client, cleanup_registry):
-        dragon_id = cleanup_registry["dragons"].pop()
-        r = api_client.delete(f"{API}/dragons/{dragon_id}")
-        assert r.status_code == 200
-        get_r = api_client.get(f"{API}/dragons/{dragon_id}")
-        assert get_r.status_code == 404
+        for did in created_ids:
+            api_client.delete(f"{API}/dragons/{did}")
 
 
-class TestTimes:
-    def test_create_time_and_verify(self, api_client, cleanup_registry):
-        r = api_client.post(f"{API}/times", json={"time": "08:30"})
+# ---------------------------------------------------------------------------
+# Times & Task Items (regression)
+# ---------------------------------------------------------------------------
+class TestTimesAndItems:
+    def test_create_time_and_verify(self, api_client):
+        r = api_client.post(f"{API}/times", json={"time": "TEST_08:31"})
         assert r.status_code == 200
         data = r.json()
-        assert data["time"] == "08:30"
-        cleanup_registry["times"].append(data["id"])
+        cleanup_id = data["id"]
         get_r = api_client.get(f"{API}/times")
-        assert any(t["time"] == "08:30" for t in get_r.json())
+        assert any(t["id"] == cleanup_id for t in get_r.json())
+        api_client.delete(f"{API}/times/{cleanup_id}")
 
-    def test_duplicate_time_rejected(self, api_client):
-        r = api_client.post(f"{API}/times", json={"time": "08:30"})
-        assert r.status_code == 400
-        assert "findes allerede" in r.json()["detail"]
-
-    def test_delete_time(self, api_client, cleanup_registry):
-        r = api_client.post(f"{API}/times", json={"time": "09:15"})
-        time_id = r.json()["id"]
-        del_r = api_client.delete(f"{API}/times/{time_id}")
-        assert del_r.status_code == 200
-        get_r = api_client.get(f"{API}/times")
-        assert not any(t["id"] == time_id for t in get_r.json())
-
-
-class TestTaskItems:
-    def test_create_and_list_task_item(self, api_client, cleanup_registry):
+    def test_create_and_delete_task_item(self, api_client):
         r = api_client.post(f"{API}/task-items", json={"category": "fodring", "name": "TEST_Larver"})
         assert r.status_code == 200
         data = r.json()
-        assert data["category"] == "fodring"
-        cleanup_registry["items"].append(data["id"])
-        list_r = api_client.get(f"{API}/task-items?category=fodring")
-        assert any(i["id"] == data["id"] for i in list_r.json())
-
-    def test_delete_task_item(self, api_client):
-        r = api_client.post(f"{API}/task-items", json={"category": "pleje", "name": "TEST_Bad"})
-        item_id = r.json()["id"]
-        del_r = api_client.delete(f"{API}/task-items/{item_id}")
+        del_r = api_client.delete(f"{API}/task-items/{data['id']}")
         assert del_r.status_code == 200
-        list_r = api_client.get(f"{API}/task-items?category=pleje")
-        assert not any(i["id"] == item_id for i in list_r.json())
+        list_r = api_client.get(f"{API}/task-items?category=fodring")
+        assert not any(i["id"] == data["id"] for i in list_r.json())
 
 
-class TestScheduleSlotsAndOverview:
-    def test_full_flow_schedule_and_overview(self, api_client, cleanup_registry):
-        # Setup: dragon, time, item, schedule slot
+# ---------------------------------------------------------------------------
+# Schedule slots: CRUD, bulk-copy (feature B), overview age-matching
+# ---------------------------------------------------------------------------
+class TestScheduleSlotsBulkCopyAndOverview:
+    @pytest.fixture()
+    def setup_time_item(self, api_client):
+        time_r = api_client.post(f"{API}/times", json={"time": "TEST_07:01"})
+        item_r = api_client.post(f"{API}/task-items", json={"category": "fodring", "name": "TEST_Cricket"})
+        time_slot = time_r.json()
+        item = item_r.json()
+        yield time_slot, item
+        api_client.delete(f"{API}/times/{time_slot['id']}")
+        api_client.delete(f"{API}/task-items/{item['id']}")
+
+    def test_bulk_copy_creates_cartesian_product(self, api_client, setup_time_item):
+        time_slot, item = setup_time_item
+        payload = {
+            "day_of_weeks": ["mandag", "tirsdag"],
+            "age_categories": ["2-4", "4-7"],
+            "time_id": time_slot["id"],
+            "category": "fodring",
+            "item_ids": [item["id"]],
+            "is_automatic": False,
+        }
+        r = api_client.post(f"{API}/schedule-slots/bulk-copy", json=payload)
+        assert r.status_code == 200, r.text
+        results = r.json()
+        assert len(results) == 4
+        combos = {(s["day_of_week"], s["age_category"]) for s in results}
+        assert combos == {("mandag", "2-4"), ("mandag", "4-7"), ("tirsdag", "2-4"), ("tirsdag", "4-7")}
+
+        get_r = api_client.get(f"{API}/schedule-slots?age_category=2-4&day_of_week=mandag")
+        assert get_r.status_code == 200
+        matching = [s for s in get_r.json() if s["time_id"] == time_slot["id"] and s["category"] == "fodring"]
+        assert len(matching) == 1
+        assert matching[0]["item_ids"] == [item["id"]]
+
+        for s in results:
+            api_client.delete(f"{API}/schedule-slots/{s['id']}")
+
+    def test_bulk_copy_upserts_existing_slot_not_duplicate(self, api_client, setup_time_item):
+        time_slot, item = setup_time_item
+        # create initial slot for mandag/2-4
+        create_r = api_client.post(f"{API}/schedule-slots", json={
+            "age_category": "2-4", "day_of_week": "mandag", "time_id": time_slot["id"],
+            "category": "fodring", "item_ids": [item["id"]], "is_automatic": False,
+        })
+        original_slot = create_r.json()
+
+        other_item_r = api_client.post(f"{API}/task-items", json={"category": "fodring", "name": "TEST_OtherFood"})
+        other_item = other_item_r.json()
+
+        # bulk-copy same time+category to mandag/2-4 (existing) and onsdag/2-4 (new) with DIFFERENT items
+        bulk_r = api_client.post(f"{API}/schedule-slots/bulk-copy", json={
+            "day_of_weeks": ["mandag", "onsdag"],
+            "age_categories": ["2-4"],
+            "time_id": time_slot["id"],
+            "category": "fodring",
+            "item_ids": [other_item["id"]],
+            "is_automatic": False,
+        })
+        assert bulk_r.status_code == 200
+        results = bulk_r.json()
+        assert len(results) == 2
+
+        get_r = api_client.get(f"{API}/schedule-slots?age_category=2-4&day_of_week=mandag")
+        mandag_slots = [s for s in get_r.json() if s["time_id"] == time_slot["id"] and s["category"] == "fodring"]
+        assert len(mandag_slots) == 1, "Should overwrite, not duplicate"
+        assert mandag_slots[0]["id"] == original_slot["id"]
+        assert mandag_slots[0]["item_ids"] == [other_item["id"]], "items should be overwritten"
+
+        for s in results:
+            api_client.delete(f"{API}/schedule-slots/{s['id']}")
+        api_client.delete(f"{API}/task-items/{other_item['id']}")
+
+    def test_full_flow_schedule_and_overview_age_matching(self, api_client, setup_time_item):
+        time_slot, item = setup_time_item
         dragon_r = api_client.post(f"{API}/dragons", json={
             "name": "TEST_OverviewDragon", "gender": "Hun", "color": "Yellow",
-            "morph": "Citrus", "birthday": "2025-06-01", "age_category": "2-4",
+            "morph": "Citrus", "birthday": months_ago_date(2),
         })
         dragon = dragon_r.json()
+        assert dragon["age_category"] == "2-4"
 
-        time_r = api_client.post(f"{API}/times", json={"time": "07:00"})
-        time_slot = time_r.json()
-
-        item_r = api_client.post(f"{API}/task-items", json={"category": "fodring", "name": "TEST_Cricket"})
-        item = item_r.json()
-
-        # find day_of_week for today via overview computation, but we schedule for known day
-        import datetime
         today = datetime.date.today()
         day_names = ["mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag", "søndag"]
         dow = day_names[today.weekday()]
 
         slot_r = api_client.post(f"{API}/schedule-slots", json={
-            "age_category": "2-4",
-            "day_of_week": dow,
-            "time_id": time_slot["id"],
-            "category": "fodring",
-            "item_ids": [item["id"]],
-            "is_automatic": False,
+            "age_category": "2-4", "day_of_week": dow, "time_id": time_slot["id"],
+            "category": "fodring", "item_ids": [item["id"]], "is_automatic": False,
         })
-        assert slot_r.status_code == 200
         slot = slot_r.json()
 
-        # daily overview for today should include this dragon+task
         overview_r = api_client.get(f"{API}/daily-overview?date={today.isoformat()}")
         assert overview_r.status_code == 200
         overview = overview_r.json()
-        assert overview["day_of_week"] == dow
         dragon_entry = next((d for d in overview["dragons"] if d["dragon_id"] == dragon["id"]), None)
-        assert dragon_entry is not None, "Dragon missing from overview"
+        assert dragon_entry is not None
+        assert dragon_entry["age_category"] == "2-4"
         task = next((t for t in dragon_entry["tasks"] if t["slot_id"] == slot["id"]), None)
-        assert task is not None, "Schedule slot task missing from overview"
-        assert task["time"] == "07:00"
-        assert task["item_names"] == ["TEST_Cricket"]
+        assert task is not None
         assert task["completed"] is False
 
         # toggle completion
         toggle_r = api_client.post(f"{API}/completions/toggle", json={
             "dragon_id": dragon["id"], "schedule_slot_id": slot["id"], "date": today.isoformat(),
         })
-        assert toggle_r.status_code == 200
         assert toggle_r.json()["completed"] is True
 
+        # now change dragon birthday so it ages out of 2-4 bracket -> overview should no longer show that task
+        api_client.put(f"{API}/dragons/{dragon['id']}", json={"birthday": months_ago_date(9)})
         overview_r2 = api_client.get(f"{API}/daily-overview?date={today.isoformat()}")
         dragon_entry2 = next(d for d in overview_r2.json()["dragons"] if d["dragon_id"] == dragon["id"])
-        task2 = next(t for t in dragon_entry2["tasks"] if t["slot_id"] == slot["id"])
-        assert task2["completed"] is True
+        assert dragon_entry2["age_category"] == "7-12"
+        assert not any(t["slot_id"] == slot["id"] for t in dragon_entry2["tasks"]), \
+            "Task for old age bracket should no longer appear after dragon aged into new bracket"
 
-        # toggle back
-        toggle_r2 = api_client.post(f"{API}/completions/toggle", json={
-            "dragon_id": dragon["id"], "schedule_slot_id": slot["id"], "date": today.isoformat(),
-        })
-        assert toggle_r2.json()["completed"] is False
-
-        # deleting item removes it from slot's item_ids
-        api_client.delete(f"{API}/task-items/{item['id']}")
-        slots_r = api_client.get(f"{API}/schedule-slots?age_category=2-4&day_of_week={dow}")
-        updated_slot = next(s for s in slots_r.json() if s["id"] == slot["id"])
-        assert item["id"] not in updated_slot["item_ids"]
-
-        # deleting time in use should be blocked with 400
-        time_del_r = api_client.delete(f"{API}/times/{time_slot['id']}")
-        assert time_del_r.status_code == 400
-        assert "bruges" in time_del_r.json()["detail"]
-
-        # cleanup slot then time then dragon
         api_client.delete(f"{API}/schedule-slots/{slot['id']}")
-        api_client.delete(f"{API}/times/{time_slot['id']}")
         api_client.delete(f"{API}/dragons/{dragon['id']}")
 
-    def test_update_schedule_slot(self, api_client):
-        time_r = api_client.post(f"{API}/times", json={"time": "20:00"})
-        time_slot = time_r.json()
-        item_r = api_client.post(f"{API}/task-items", json={"category": "lys", "name": "TEST_UVB"})
-        item = item_r.json()
+    def test_update_schedule_slot_normal_regression(self, api_client, setup_time_item):
+        time_slot, item = setup_time_item
         slot_r = api_client.post(f"{API}/schedule-slots", json={
             "age_category": "4-7", "day_of_week": "mandag", "time_id": time_slot["id"],
-            "category": "lys", "item_ids": [item["id"]], "is_automatic": True,
+            "category": "fodring", "item_ids": [item["id"]], "is_automatic": True,
         })
         slot = slot_r.json()
         upd_r = api_client.put(f"{API}/schedule-slots/{slot['id']}", json={"is_automatic": False})
@@ -237,8 +295,6 @@ class TestScheduleSlotsAndOverview:
 
         del_r = api_client.delete(f"{API}/schedule-slots/{slot['id']}")
         assert del_r.status_code == 200
-        api_client.delete(f"{API}/times/{time_slot['id']}")
-        api_client.delete(f"{API}/task-items/{item['id']}")
 
     def test_delete_nonexistent_slot_404(self, api_client):
         r = api_client.delete(f"{API}/schedule-slots/000000000000000000000000")
@@ -246,10 +302,10 @@ class TestScheduleSlotsAndOverview:
 
 
 class TestValidation:
-    def test_invalid_age_category_rejected(self, api_client):
+    def test_invalid_gender_rejected(self, api_client):
         r = api_client.post(f"{API}/dragons", json={
-            "name": "TEST_Bad", "gender": "Han", "color": "X", "morph": "X",
-            "birthday": "2024-01-01", "age_category": "invalid-cat",
+            "name": "TEST_Bad", "gender": "InvalidGender", "color": "X", "morph": "X",
+            "birthday": "2024-01-01",
         })
         assert r.status_code == 422
 

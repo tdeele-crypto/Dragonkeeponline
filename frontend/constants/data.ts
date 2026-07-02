@@ -98,3 +98,14 @@ export function isSameDay(a: Date, b: Date): boolean {
     a.getDate() === b.getDate()
   );
 }
+
+export function computeAgeCategory(birthday: Date): AgeCategory {
+  const today = new Date();
+  let months = (today.getFullYear() - birthday.getFullYear()) * 12 + (today.getMonth() - birthday.getMonth());
+  if (today.getDate() < birthday.getDate()) months -= 1;
+  months = Math.max(months, 0);
+  if (months < 4) return '2-4';
+  if (months < 7) return '4-7';
+  if (months < 12) return '7-12';
+  return '12+';
+}

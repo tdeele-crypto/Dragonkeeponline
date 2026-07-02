@@ -11,11 +11,12 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { AGE_CATEGORIES, DAY_LABELS, TASK_CATEGORIES } from '@/constants/data';
+import { AGE_CATEGORIES, DAY_LABELS, DAYS_OF_WEEK, TASK_CATEGORIES } from '@/constants/data';
 import { api } from '@/utils/api';
 import { useToast } from '@/context/OverlayContext';
 import PickerField from '@/components/PickerField';
 import SelectSheet from '@/components/SelectSheet';
+import CopyToDaysSheet from '@/components/CopyToDaysSheet';
 import type { AgeCategory, DayOfWeek, ScheduleSlot, TaskCategory, TaskItem, TimeSlot } from '@/types';
 
 export default function ScheduleSlotFormScreen() {
@@ -37,6 +38,9 @@ export default function ScheduleSlotFormScreen() {
   const [categorySheetVisible, setCategorySheetVisible] = useState(false);
   const [timeSheetVisible, setTimeSheetVisible] = useState(false);
   const [itemsSheetVisible, setItemsSheetVisible] = useState(false);
+  const [copySheetVisible, setCopySheetVisible] = useState(false);
+  const [selectedDays, setSelectedDays] = useState<DayOfWeek[]>([]);
+  const [selectedAges, setSelectedAges] = useState<AgeCategory[]>([]);
 
   useEffect(() => {
     (async () => {
@@ -77,27 +81,71 @@ export default function ScheduleSlotFormScreen() {
   const computedIsAutomatic =
     category === 'lys' && selectedLysItems.length > 0 && selectedLysItems.every((i) => i.is_automatic);
 
+  const toggleCopyDay = (day: DayOfWeek) => {
+    if (day === params.dayOfWeek) return;
+    setSelectedDays((prev) => (prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]));
+  };
+
+  const toggleCopyAge = (age: AgeCategory) => {
+    if (age === params.ageCategory) return;
+    setSelectedAges((prev) => (prev.includes(age) ? prev.filter((a) => a !== age) : [...prev, age]));
+  };
+
+  const selectAllDays = () => {
+    setSelectedDays((prev) =>
+      prev.length === DAYS_OF_WEEK.length ? [] : DAYS_OF_WEEK.filter((d) => d !== params.dayOfWeek)
+    );
+  };
+
+  const selectAllAges = () => {
+    setSelectedAges((prev) =>
+      prev.length === AGE_CATEGORIES.length
+        ? []
+        : AGE_CATEGORIES.map((a) => a.value).filter((a) => a !== params.ageCategory)
+    );
+  };
+
+  const isCopying = selectedDays.length > 0 || selectedAges.length > 0;
+  const daysToApply = Array.from(new Set([params.dayOfWeek, ...selectedDays]));
+  const agesToApply = Array.from(new Set([params.ageCategory, ...selectedAges]));
+
   const handleSave = async () => {
     if (!category || !timeId) {
       showToast('Vælg venligst kategori og tidspunkt', 'error');
       return;
     }
     setSaving(true);
-    const payload = {
-      age_category: params.ageCategory,
-      day_of_week: params.dayOfWeek,
-      time_id: timeId,
-      category,
-      item_ids: itemIds,
-      is_automatic: category === 'lys' ? computedIsAutomatic : false,
-    };
+    const isAutomatic = category === 'lys' ? computedIsAutomatic : false;
     try {
-      if (isEdit) {
-        await api.put(`/schedule-slots/${params.id}`, payload);
-        showToast('Opgave opdateret', 'success');
+      if (!isCopying) {
+        const payload = {
+          age_category: params.ageCategory,
+          day_of_week: params.dayOfWeek,
+          time_id: timeId,
+          category,
+          item_ids: itemIds,
+          is_automatic: isAutomatic,
+        };
+        if (isEdit) {
+          await api.put(`/schedule-slots/${params.id}`, payload);
+          showToast('Opgave opdateret', 'success');
+        } else {
+          await api.post('/schedule-slots', payload);
+          showToast('Opgave tilføjet til ugeplan', 'success');
+        }
       } else {
-        await api.post('/schedule-slots', payload);
-        showToast('Opgave tilføjet til ugeplan', 'success');
+        if (isEdit && params.id) {
+          await api.delete(`/schedule-slots/${params.id}`);
+        }
+        await api.post('/schedule-slots/bulk-copy', {
+          day_of_weeks: daysToApply,
+          age_categories: agesToApply,
+          time_id: timeId,
+          category,
+          item_ids: itemIds,
+          is_automatic: isAutomatic,
+        });
+        showToast(`Opgave kopieret til ${daysToApply.length} dage × ${agesToApply.length} perioder`, 'success');
       }
       router.back();
     } catch (e: any) {
@@ -183,6 +231,23 @@ export default function ScheduleSlotFormScreen() {
         )}
 
         <TouchableOpacity
+          style={styles.copyButton}
+          onPress={() => setCopySheetVisible(true)}
+          testID="schedule-slot-form-copy-button"
+        >
+          <Ionicons name="copy-outline" size={18} color={COLORS.primary} />
+          <View style={{ flex: 1 }}>
+            <Text style={styles.copyButtonText}>Kopier til dage</Text>
+            {isCopying && (
+              <Text style={styles.copyButtonSubtext}>
+                {daysToApply.length} dage × {agesToApply.length} perioder = {daysToApply.length * agesToApply.length} opgaver
+              </Text>
+            )}
+          </View>
+          <Ionicons name="chevron-forward" size={18} color={COLORS.textMuted} />
+        </TouchableOpacity>
+
+        <TouchableOpacity
           style={[styles.saveBtn, saving && styles.saveBtnDisabled]}
           onPress={handleSave}
           disabled={saving}
@@ -225,6 +290,19 @@ export default function ScheduleSlotFormScreen() {
         onSelect={setItemIds}
         onClose={() => setItemsSheetVisible(false)}
         testIDPrefix="schedule-slot-form-items-sheet"
+      />
+
+      <CopyToDaysSheet
+        visible={copySheetVisible}
+        currentDay={params.dayOfWeek}
+        currentAge={params.ageCategory}
+        selectedDays={selectedDays}
+        selectedAges={selectedAges}
+        onToggleDay={toggleCopyDay}
+        onToggleAge={toggleCopyAge}
+        onSelectAllDays={selectAllDays}
+        onSelectAllAges={selectAllAges}
+        onClose={() => setCopySheetVisible(false)}
       />
     </SafeAreaView>
   );
@@ -296,6 +374,30 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textSecondary,
     lineHeight: 17,
+  },
+  copyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    backgroundColor: COLORS.white,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    marginBottom: 16,
+    minHeight: 50,
+  },
+  copyButtonText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  copyButtonSubtext: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.primaryDark,
+    marginTop: 2,
   },
   saveBtn: {
     backgroundColor: COLORS.primary,
