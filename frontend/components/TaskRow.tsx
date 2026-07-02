@@ -3,6 +3,8 @@ import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
 import { CATEGORY_ICONS } from '@/constants/data';
+import { formatTimeDisplay } from '@/i18n/translations';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import type { OverviewTask } from '@/types';
 
 interface TaskRowProps {
@@ -12,6 +14,7 @@ interface TaskRowProps {
 }
 
 export default function TaskRow({ task, onToggle, testID }: TaskRowProps) {
+  const { timeFormat, t } = useAdminSettings();
   const palette = COLORS.categories[task.category];
   const itemsLabel = task.item_names.length > 0 ? task.item_names.join(' + ') : null;
 
@@ -24,11 +27,11 @@ export default function TaskRow({ task, onToggle, testID }: TaskRowProps) {
       <View style={styles.content}>
         <View style={styles.topRow}>
           <Ionicons name={CATEGORY_ICONS[task.category] as any} size={15} color={palette.text} />
-          <Text style={[styles.time, { color: palette.text }]}>{task.time}</Text>
+          <Text style={[styles.time, { color: palette.text }]}>{formatTimeDisplay(task.time, timeFormat)}</Text>
           {task.is_automatic && (
             <View style={styles.autoBadge} testID={`${testID}-auto-badge`}>
               <Ionicons name="sync" size={10} color={COLORS.textSecondary} />
-              <Text style={styles.autoText}>Automatisk</Text>
+              <Text style={styles.autoText}>{t('taskRow.automatic')}</Text>
             </View>
           )}
         </View>

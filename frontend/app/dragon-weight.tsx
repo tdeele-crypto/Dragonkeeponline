@@ -16,9 +16,18 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LineChart } from 'react-native-gifted-charts';
 import { COLORS } from '@/constants/colors';
-import { formatDateDanish, formatDateShortDanish, formatDateISO } from '@/constants/data';
+import { formatDateISO } from '@/constants/data';
+import {
+  formatDateLabel,
+  formatDateShort,
+  formatWeightDisplay,
+  gramsToDisplay,
+  displayToGrams,
+  weightUnitLabel,
+} from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import FormField from '@/components/FormField';
 import PickerField from '@/components/PickerField';
 import type { WeightEntry } from '@/types';
@@ -30,6 +39,7 @@ export default function DragonWeightScreen() {
   const router = useRouter();
   const showToast = useToast();
   const showConfirm = useConfirm();
+  const { language, weightUnit, t } = useAdminSettings();
   const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
 
   const [loading, setLoading] = useState(true);
@@ -46,7 +56,7 @@ export default function DragonWeightScreen() {
       const data: WeightEntry[] = await api.get(`/dragons/${id}/weights`);
       setEntries(data);
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke hente vægtmålinger', 'error');
+      showToast(e.message || t('weight.fetchError'), 'error');
     } finally {
       setLoading(false);
     }
@@ -69,18 +79,19 @@ export default function DragonWeightScreen() {
     const cutoff = formatDateISO(twelveMonthsAgo);
     const recent = entries.filter((e) => e.date >= cutoff).sort((a, b) => (a.date < b.date ? -1 : 1));
     return recent.map((e) => ({
-      value: e.weight_grams,
-      label: formatDateShortDanish(new Date(e.date)),
-      dataPointText: String(e.weight_grams),
+      value: gramsToDisplay(e.weight_grams, weightUnit),
+      label: formatDateShort(new Date(e.date)),
+      dataPointText: String(gramsToDisplay(e.weight_grams, weightUnit)),
     }));
-  }, [entries]);
+  }, [entries, weightUnit]);
 
   const handleAddWeight = async () => {
-    const weightValue = parseFloat(weightInput.replace(',', '.'));
-    if (!weightValue || weightValue <= 0) {
-      showToast('Angiv venligst en gyldig vægt i gram', 'error');
+    const rawValue = parseFloat(weightInput.replace(',', '.'));
+    if (!rawValue || rawValue <= 0) {
+      showToast(t('weight.invalidWeight'), 'error');
       return;
     }
+    const weightValue = displayToGrams(rawValue, weightUnit);
     setSaving(true);
     try {
       await api.post(`/dragons/${id}/weights`, {
@@ -91,10 +102,10 @@ export default function DragonWeightScreen() {
       setWeightInput('');
       setNoteInput('');
       setDate(new Date());
-      showToast('Vægt registreret', 'success');
+      showToast(t('weight.registerSuccess'), 'success');
       fetchEntries();
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke registrere vægt', 'error');
+      showToast(e.message || t('weight.registerError'), 'error');
     } finally {
       setSaving(false);
     }
@@ -102,17 +113,21 @@ export default function DragonWeightScreen() {
 
   const handleDeleteEntry = (entry: WeightEntry) => {
     showConfirm({
-      title: 'Slet vægtmåling?',
-      message: `${entry.weight_grams} g fra ${formatDateDanish(new Date(entry.date))} bliver slettet.`,
-      confirmLabel: 'Slet',
+      title: t('weight.deleteTitle'),
+      message: t('weight.deleteMessage', {
+        weight: formatWeightDisplay(entry.weight_grams, weightUnit),
+        date: formatDateLabel(new Date(entry.date), language),
+      }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
       destructive: true,
       onConfirm: async () => {
         try {
           await api.delete(`/weights/${entry.id}`);
-          showToast('Vægtmåling slettet', 'success');
+          showToast(t('weight.deleteSuccess'), 'success');
           fetchEntries();
         } catch (e: any) {
-          showToast(e.message || 'Kunne ikke slette', 'error');
+          showToast(e.message || t('weight.deleteError'), 'error');
         }
       },
     });
@@ -124,7 +139,7 @@ export default function DragonWeightScreen() {
         <TouchableOpacity onPress={() => router.back()} testID="dragon-weight-close-button" style={styles.closeBtn}>
           <Ionicons name="close" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle} numberOfLines={1}>{name || 'Agame'} - Vægt</Text>
+        <Text style={styles.headerTitle} numberOfLines={1}>{name || 'Dragon'} - {t('weight.headerSuffix')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -140,41 +155,41 @@ export default function DragonWeightScreen() {
                 <Ionicons name="scale-outline" size={22} color={COLORS.primaryDark} />
               </View>
               <View style={{ flex: 1 }}>
-                <Text style={styles.latestLabel}>Sidste registrerede vægt</Text>
+                <Text style={styles.latestLabel}>{t('weight.latestLabel')}</Text>
                 {latest ? (
                   <>
-                    <Text style={styles.latestValue}>{latest.weight_grams} g</Text>
-                    <Text style={styles.latestDate}>{formatDateDanish(new Date(latest.date))}</Text>
+                    <Text style={styles.latestValue}>{formatWeightDisplay(latest.weight_grams, weightUnit)}</Text>
+                    <Text style={styles.latestDate}>{formatDateLabel(new Date(latest.date), language)}</Text>
                   </>
                 ) : (
-                  <Text style={styles.latestEmpty}>Ingen vægt registreret endnu</Text>
+                  <Text style={styles.latestEmpty}>{t('weight.noneYet')}</Text>
                 )}
               </View>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Registrer ny vægt</Text>
+              <Text style={styles.sectionTitle}>{t('weight.registerNew')}</Text>
               <FormField
-                label="Vægt (gram)"
+                label={t('weight.weightLabel', { unit: weightUnitLabel(weightUnit) })}
                 testID="weight-form-weight-input"
                 value={weightInput}
                 onChangeText={setWeightInput}
-                placeholder="F.eks. 320"
+                placeholder={t('weight.weightPlaceholder', { example: weightUnit === 'oz' ? '11.3' : '320' })}
                 keyboardType="decimal-pad"
               />
               <PickerField
-                label="Dato"
-                value={formatDateDanish(date)}
+                label={t('weight.dateLabel')}
+                value={formatDateLabel(date, language)}
                 onPress={() => setShowDatePicker(true)}
                 testID="weight-form-date-picker"
                 icon="calendar-outline"
               />
               <FormField
-                label="Note (valgfri)"
+                label={t('weight.noteLabel')}
                 testID="weight-form-note-input"
                 value={noteInput}
                 onChangeText={setNoteInput}
-                placeholder="F.eks. Efter skifte af hud"
+                placeholder={t('weight.notePlaceholder')}
                 multiline
               />
               <TouchableOpacity
@@ -186,13 +201,13 @@ export default function DragonWeightScreen() {
                 {saving ? (
                   <ActivityIndicator color={COLORS.white} />
                 ) : (
-                  <Text style={styles.saveBtnText}>Registrer vægt</Text>
+                  <Text style={styles.saveBtnText}>{t('weight.registerButton')}</Text>
                 )}
               </TouchableOpacity>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Udvikling - sidste 12 måneder</Text>
+              <Text style={styles.sectionTitle}>{t('weight.chartTitle')}</Text>
               {chartData.length >= 2 ? (
                 <View style={styles.chartBox} testID="weight-chart">
                   <LineChart
@@ -224,23 +239,23 @@ export default function DragonWeightScreen() {
                 <View style={styles.chartEmpty} testID="weight-chart-empty">
                   <Ionicons name="stats-chart-outline" size={28} color={COLORS.textMuted} />
                   <Text style={styles.chartEmptyText}>
-                    Ikke nok data endnu - registrer mindst 2 vægtmålinger for at se en graf
+                    {t('weight.chartEmpty')}
                   </Text>
                 </View>
               )}
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>Tidligere målinger</Text>
+              <Text style={styles.sectionTitle}>{t('weight.historyTitle')}</Text>
               {sortedDesc.length === 0 ? (
-                <Text style={styles.emptyHistoryText}>Ingen målinger registreret endnu</Text>
+                <Text style={styles.emptyHistoryText}>{t('weight.historyEmpty')}</Text>
               ) : (
                 sortedDesc.map((entry) => (
                   <View key={entry.id} style={styles.historyRow} testID={`weight-history-row-${entry.id}`}>
                     <View style={{ flex: 1 }}>
                       <View style={styles.historyRowTop}>
-                        <Text style={styles.historyWeight}>{entry.weight_grams} g</Text>
-                        <Text style={styles.historyDate}>{formatDateDanish(new Date(entry.date))}</Text>
+                        <Text style={styles.historyWeight}>{formatWeightDisplay(entry.weight_grams, weightUnit)}</Text>
+                        <Text style={styles.historyDate}>{formatDateLabel(new Date(entry.date), language)}</Text>
                       </View>
                       {!!entry.note && <Text style={styles.historyNote}>{entry.note}</Text>}
                     </View>

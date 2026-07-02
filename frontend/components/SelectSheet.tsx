@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 
 export interface SelectOption {
   value: string;
@@ -30,6 +31,7 @@ export default function SelectSheet({
   onSelect,
   testIDPrefix = 'select-sheet',
 }: SelectSheetProps) {
+  const { t } = useAdminSettings();
   const toggle = (value: string) => {
     if (multi) {
       const next = selected.includes(value)
@@ -56,7 +58,7 @@ export default function SelectSheet({
           </View>
           <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
             {options.length === 0 && (
-              <Text style={styles.emptyText}>Ingen muligheder tilføjet endnu</Text>
+              <Text style={styles.emptyText}>{t('selectSheet.empty')}</Text>
             )}
             {options.map((opt) => {
               const isSelected = selected.includes(opt.value);
@@ -78,7 +80,7 @@ export default function SelectSheet({
           </ScrollView>
           {multi && (
             <TouchableOpacity style={styles.doneBtn} onPress={onClose} testID={`${testIDPrefix}-done-button`}>
-              <Text style={styles.doneBtnText}>Færdig</Text>
+              <Text style={styles.doneBtnText}>{t('copyToDays.done')}</Text>
             </TouchableOpacity>
           )}
         </View>

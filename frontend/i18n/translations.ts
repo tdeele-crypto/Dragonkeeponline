@@ -15,6 +15,10 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'common.close': 'Luk',
     'common.of': 'af',
     'common.done': 'udført',
+    'common.select': 'Vælg',
+    'common.confirm': 'Bekræft',
+
+    'selectSheet.empty': 'Ingen muligheder tilføjet endnu',
 
     'tabs.overview': 'Dagsoversigt',
     'tabs.dragons': 'Agamer',
@@ -122,6 +126,7 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'slotForm.autoInfoAuto': 'Automatisk - kræver ikke afkrydsning på dagsoversigten',
     'slotForm.autoInfoManual': 'Manuel - kræver afkrydsning på dagsoversigten',
     'slotForm.copyButton': 'Kopier til dage',
+    'slotForm.copySubtext': '{{d}} dage × {{p}} perioder = {{total}} opgaver',
     'slotForm.saveChanges': 'Gem ændringer',
     'slotForm.addTask': 'Tilføj opgave',
     'slotForm.selectCategoryTitle': 'Vælg kategori',
@@ -242,6 +247,10 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'common.close': 'Close',
     'common.of': 'of',
     'common.done': 'done',
+    'common.select': 'Select',
+    'common.confirm': 'Confirm',
+
+    'selectSheet.empty': 'No options added yet',
 
     'tabs.overview': 'Overview',
     'tabs.dragons': 'Dragons',
@@ -349,6 +358,7 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'slotForm.autoInfoAuto': 'Automatic - does not require checking off on the overview',
     'slotForm.autoInfoManual': 'Manual - requires checking off on the overview',
     'slotForm.copyButton': 'Copy to days',
+    'slotForm.copySubtext': '{{d}} days × {{p}} periods = {{total}} tasks',
     'slotForm.saveChanges': 'Save changes',
     'slotForm.addTask': 'Add task',
     'slotForm.selectCategoryTitle': 'Select category',

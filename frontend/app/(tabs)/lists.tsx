@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
+import { formatTimeDisplay } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
@@ -31,19 +32,19 @@ import type { TaskItem, TimeSlot, Dragon, ScheduleSlot } from '@/types';
 
 type ListKey = 'tider' | 'fodring' | 'pleje' | 'lys';
 
-const LIST_TABS: { key: ListKey; label: string; icon: string }[] = [
-  { key: 'tider', label: 'Tider', icon: 'time-outline' },
-  { key: 'fodring', label: 'Fodring', icon: 'leaf-outline' },
-  { key: 'pleje', label: 'Pleje', icon: 'water-outline' },
-  { key: 'lys', label: 'Lys & Varme', icon: 'sunny-outline' },
-];
-
 export default function ListsScreen() {
   const router = useRouter();
   const showToast = useToast();
   const showConfirm = useConfirm();
-  const { appBgColor, pageTitleColor } = useAdminSettings();
+  const { appBgColor, pageTitleColor, timeFormat, t } = useAdminSettings();
   const [activeTab, setActiveTab] = useState<ListKey>('tider');
+
+  const LIST_TABS: { key: ListKey; label: string; icon: string }[] = [
+    { key: 'tider', label: t('tasks.tabTider'), icon: 'time-outline' },
+    { key: 'fodring', label: t('tasks.tabFodring'), icon: 'leaf-outline' },
+    { key: 'pleje', label: t('tasks.tabPleje'), icon: 'water-outline' },
+    { key: 'lys', label: t('tasks.tabLys'), icon: 'sunny-outline' },
+  ];
   const [times, setTimes] = useState<TimeSlot[]>([]);
   const [items, setItems] = useState<TaskItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -61,7 +62,7 @@ export default function ListsScreen() {
       setTimes(timesData);
       setItems(itemsData);
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke hente lister', 'error');
+      showToast(e.message || t('tasks.fetchError'), 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -92,26 +93,26 @@ export default function ListsScreen() {
       if (value) {
         const available = await isNotificationsAvailable();
         if (!available) {
-          showToast('Notifikationer kræver en udviklings-build (ikke tilgængelig i Expo Go)', 'error');
+          showToast(t('tasks.notifDevBuildRequired'), 'error');
           setUpdatingNotifications(false);
           return;
         }
         const granted = await requestNotificationPermissions();
         if (!granted) {
-          showToast('Tilladelse til notifikationer blev afvist', 'error');
+          showToast(t('tasks.notifPermissionDenied'), 'error');
           setUpdatingNotifications(false);
           return;
         }
         await doRescheduleNotifications();
-        showToast('Notifikationer aktiveret', 'success');
+        showToast(t('tasks.notifEnabled'), 'success');
       } else {
         await cancelAllNotifications();
-        showToast('Notifikationer slået fra', 'success');
+        showToast(t('tasks.notifDisabled'), 'success');
       }
       setNotificationsEnabledState(value);
       await persistNotificationsEnabled(value);
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke opdatere notifikationer', 'error');
+      showToast(e.message || t('tasks.notifUpdateError'), 'error');
     } finally {
       setUpdatingNotifications(false);
     }
@@ -119,16 +120,17 @@ export default function ListsScreen() {
 
   const handleDeleteTime = (time: TimeSlot) => {
     showConfirm({
-      title: `Slet ${time.time}?`,
-      confirmLabel: 'Slet',
+      title: t('tasks.deleteTimeTitle', { time: formatTimeDisplay(time.time, timeFormat) }),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
       destructive: true,
       onConfirm: async () => {
         try {
           await api.delete(`/times/${time.id}`);
-          showToast('Tidspunkt slettet', 'success');
+          showToast(t('tasks.timeDeletedSuccess'), 'success');
           fetchData(false);
         } catch (e: any) {
-          showToast(e.message || 'Kunne ikke slette tidspunkt', 'error');
+          showToast(e.message || t('tasks.timeDeleteError'), 'error');
         }
       },
     });
@@ -136,17 +138,18 @@ export default function ListsScreen() {
 
   const handleDeleteItem = (item: TaskItem) => {
     showConfirm({
-      title: `Slet "${item.name}"?`,
-      message: 'Emnet fjernes også fra alle ugeplaner, hvor det er brugt.',
-      confirmLabel: 'Slet',
+      title: t('tasks.deleteItemTitle', { name: item.name }),
+      message: t('tasks.deleteItemMessage'),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
       destructive: true,
       onConfirm: async () => {
         try {
           await api.delete(`/task-items/${item.id}`);
-          showToast('Emne slettet', 'success');
+          showToast(t('tasks.itemDeletedSuccess'), 'success');
           fetchData(false);
         } catch (e: any) {
-          showToast(e.message || 'Kunne ikke slette emne', 'error');
+          showToast(e.message || t('tasks.itemDeleteError'), 'error');
         }
       },
     });
@@ -161,7 +164,7 @@ export default function ListsScreen() {
         is_automatic: value,
       });
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke opdatere automatik', 'error');
+      showToast(e.message || t('tasks.autoUpdateError'), 'error');
       setItems((prev) => prev.map((i) => (i.id === item.id ? { ...i, is_automatic: !value } : i)));
     }
   };
@@ -172,7 +175,7 @@ export default function ListsScreen() {
     <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Opgaver</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>{t('tasks.title')}</Text>
       </View>
 
       <ScrollView
@@ -211,12 +214,12 @@ export default function ListsScreen() {
         >
           {activeTab === 'tider' ? (
             times.length === 0 ? (
-              <Text style={styles.emptyText}>Ingen tidspunkter tilføjet endnu</Text>
+              <Text style={styles.emptyText}>{t('tasks.emptyTimes')}</Text>
             ) : (
               times.map((time) => (
                 <View key={time.id} style={styles.row} testID={`time-row-${time.id}`}>
                   <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
-                  <Text style={styles.rowText}>{time.time}</Text>
+                  <Text style={styles.rowText}>{formatTimeDisplay(time.time, timeFormat)}</Text>
                   <TouchableOpacity
                     onPress={() =>
                       router.push({
@@ -236,14 +239,14 @@ export default function ListsScreen() {
               ))
             )
           ) : filteredItems.length === 0 ? (
-            <Text style={styles.emptyText}>Ingen emner tilføjet endnu</Text>
+            <Text style={styles.emptyText}>{t('tasks.emptyItems')}</Text>
           ) : (
             filteredItems.map((item) => (
               <View key={item.id} style={styles.row} testID={`item-row-${item.id}`}>
                 <Text style={styles.rowText}>{item.name}</Text>
                 {item.category === 'lys' && (
                   <View style={styles.autoToggleGroup} testID={`item-automatic-group-${item.id}`}>
-                    <Text style={styles.autoToggleLabel}>Automatisk</Text>
+                    <Text style={styles.autoToggleLabel}>{t('tasks.automatic')}</Text>
                     <Switch
                       value={item.is_automatic}
                       onValueChange={(value) => handleToggleItemAutomatic(item, value)}
@@ -272,11 +275,11 @@ export default function ListsScreen() {
           )}
 
           <View style={styles.settingsSection}>
-            <Text style={styles.settingsTitle}>Indstillinger</Text>
+            <Text style={styles.settingsTitle}>{t('tasks.settingsTitle')}</Text>
             <View style={styles.settingsRow}>
               <View style={{ flex: 1 }}>
-                <Text style={styles.settingsLabel}>Påmindelser</Text>
-                <Text style={styles.settingsSubLabel}>Få lokale notifikationer for planlagte opgaver</Text>
+                <Text style={styles.settingsLabel}>{t('tasks.remindersLabel')}</Text>
+                <Text style={styles.settingsSubLabel}>{t('tasks.remindersSubLabel')}</Text>
               </View>
               {updatingNotifications ? (
                 <ActivityIndicator color={COLORS.primary} />

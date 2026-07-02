@@ -11,9 +11,11 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { AGE_CATEGORIES, DAY_LABELS, DAYS_OF_WEEK, TASK_CATEGORIES } from '@/constants/data';
+import { AGE_CATEGORIES, DAYS_OF_WEEK } from '@/constants/data';
+import { getAgeLabel, getDayLabel, getTaskCategories, getCategoryLabel, formatTimeDisplay } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useToast } from '@/context/OverlayContext';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import PickerField from '@/components/PickerField';
 import SelectSheet from '@/components/SelectSheet';
 import CopyToDaysSheet from '@/components/CopyToDaysSheet';
@@ -22,6 +24,7 @@ import type { AgeCategory, DayOfWeek, ScheduleSlot, TaskCategory, TaskItem, Time
 export default function ScheduleSlotFormScreen() {
   const router = useRouter();
   const showToast = useToast();
+  const { language, timeFormat, t } = useAdminSettings();
   const params = useLocalSearchParams<{ id?: string; ageCategory: AgeCategory; dayOfWeek: DayOfWeek }>();
   const isEdit = !!params.id;
 
@@ -61,7 +64,7 @@ export default function ScheduleSlotFormScreen() {
           }
         }
       } catch (e: any) {
-        showToast(e.message || 'Kunne ikke hente data', 'error');
+        showToast(e.message || t('slotForm.fetchError'), 'error');
       } finally {
         setLoading(false);
       }
@@ -111,7 +114,7 @@ export default function ScheduleSlotFormScreen() {
 
   const handleSave = async () => {
     if (!category || !timeId) {
-      showToast('Vælg venligst kategori og tidspunkt', 'error');
+      showToast(t('slotForm.validationError'), 'error');
       return;
     }
     setSaving(true);
@@ -128,10 +131,10 @@ export default function ScheduleSlotFormScreen() {
         };
         if (isEdit) {
           await api.put(`/schedule-slots/${params.id}`, payload);
-          showToast('Opgave opdateret', 'success');
+          showToast(t('slotForm.updateSuccess'), 'success');
         } else {
           await api.post('/schedule-slots', payload);
-          showToast('Opgave tilføjet til ugeplan', 'success');
+          showToast(t('slotForm.addSuccess'), 'success');
         }
       } else {
         if (isEdit && params.id) {
@@ -145,18 +148,18 @@ export default function ScheduleSlotFormScreen() {
           item_ids: itemIds,
           is_automatic: isAutomatic,
         });
-        showToast(`Opgave kopieret til ${daysToApply.length} dage × ${agesToApply.length} perioder`, 'success');
+        showToast(t('slotForm.copySuccess', { d: daysToApply.length, p: agesToApply.length }), 'success');
       }
       router.back();
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke gemme opgave', 'error');
+      showToast(e.message || t('slotForm.saveError'), 'error');
     } finally {
       setSaving(false);
     }
   };
 
-  const ageLabel = AGE_CATEGORIES.find((a) => a.value === params.ageCategory)?.label;
-  const dayLabel = DAY_LABELS[params.dayOfWeek];
+  const ageLabel = getAgeLabel(params.ageCategory, language);
+  const dayLabel = getDayLabel(params.dayOfWeek, language);
 
   if (loading) {
     return (
@@ -172,7 +175,7 @@ export default function ScheduleSlotFormScreen() {
         <TouchableOpacity onPress={() => router.back()} testID="schedule-slot-form-close-button" style={styles.closeBtn}>
           <Ionicons name="close" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEdit ? 'Rediger opgave' : 'Ny opgave'}</Text>
+        <Text style={styles.headerTitle}>{isEdit ? t('slotForm.editTitle') : t('slotForm.newTitle')}</Text>
         <View style={{ width: 40 }} />
       </View>
       <Text style={styles.subHeader} testID="schedule-slot-form-context">
@@ -181,17 +184,20 @@ export default function ScheduleSlotFormScreen() {
 
       <ScrollView contentContainerStyle={styles.form}>
         <PickerField
-          label="Kategori"
-          value={TASK_CATEGORIES.find((c) => c.value === category)?.label || ''}
-          placeholder="Vælg kategori"
+          label={t('slotForm.categoryLabel')}
+          value={category ? getCategoryLabel(category, language) : ''}
+          placeholder={t('slotForm.categoryPlaceholder')}
           onPress={() => setCategorySheetVisible(true)}
           testID="schedule-slot-form-category-picker"
         />
 
         <PickerField
-          label="Tidspunkt"
-          value={times.find((t) => t.id === timeId)?.time || ''}
-          placeholder={times.length === 0 ? 'Tilføj tider under Lister' : 'Vælg tidspunkt'}
+          label={t('slotForm.timeLabel')}
+          value={(() => {
+            const timeStr = times.find((tm) => tm.id === timeId)?.time;
+            return timeStr ? formatTimeDisplay(timeStr, timeFormat) : '';
+          })()}
+          placeholder={times.length === 0 ? t('slotForm.timeAddUnderLists') : t('slotForm.timePlaceholder')}
           onPress={() => times.length > 0 && setTimeSheetVisible(true)}
           testID="schedule-slot-form-time-picker"
           icon="time-outline"
@@ -199,9 +205,9 @@ export default function ScheduleSlotFormScreen() {
 
         {category && (
           <PickerField
-            label="Emner"
+            label={t('slotForm.itemsLabel')}
             value={itemIds.map((id) => items.find((i) => i.id === id)?.name).filter(Boolean).join(', ')}
-            placeholder={categoryItems.length === 0 ? `Tilføj emner under Lister` : 'Vælg et eller flere emner'}
+            placeholder={categoryItems.length === 0 ? t('slotForm.itemsAddUnderLists') : t('slotForm.itemsPlaceholder')}
             onPress={() => categoryItems.length > 0 && setItemsSheetVisible(true)}
             testID="schedule-slot-form-items-picker"
           />
@@ -222,10 +228,10 @@ export default function ScheduleSlotFormScreen() {
             />
             <Text style={styles.autoInfoText}>
               {selectedLysItems.length === 0
-                ? 'Vælg emner for at se om opgaven bliver automatisk eller manuel'
+                ? t('slotForm.autoInfoNone')
                 : computedIsAutomatic
-                ? 'Automatisk - kræver ikke afkrydsning på dagsoversigten'
-                : 'Manuel - kræver afkrydsning på dagsoversigten'}
+                ? t('slotForm.autoInfoAuto')
+                : t('slotForm.autoInfoManual')}
             </Text>
           </View>
         )}
@@ -237,10 +243,14 @@ export default function ScheduleSlotFormScreen() {
         >
           <Ionicons name="copy-outline" size={18} color={COLORS.primary} />
           <View style={{ flex: 1 }}>
-            <Text style={styles.copyButtonText}>Kopier til dage</Text>
+            <Text style={styles.copyButtonText}>{t('slotForm.copyButton')}</Text>
             {isCopying && (
               <Text style={styles.copyButtonSubtext}>
-                {daysToApply.length} dage × {agesToApply.length} perioder = {daysToApply.length * agesToApply.length} opgaver
+                {t('slotForm.copySubtext', {
+                  d: daysToApply.length,
+                  p: agesToApply.length,
+                  total: daysToApply.length * agesToApply.length,
+                })}
               </Text>
             )}
           </View>
@@ -253,14 +263,14 @@ export default function ScheduleSlotFormScreen() {
           disabled={saving}
           testID="schedule-slot-form-save-button"
         >
-          {saving ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>{isEdit ? 'Gem ændringer' : 'Tilføj opgave'}</Text>}
+          {saving ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>{isEdit ? t('slotForm.saveChanges') : t('slotForm.addTask')}</Text>}
         </TouchableOpacity>
       </ScrollView>
 
       <SelectSheet
         visible={categorySheetVisible}
-        title="Vælg kategori"
-        options={TASK_CATEGORIES.map((c) => ({ value: c.value, label: c.label, icon: c.icon }))}
+        title={t('slotForm.selectCategoryTitle')}
+        options={getTaskCategories(language)}
         selected={category ? [category] : []}
         onSelect={(v) => {
           const next = v[0] as TaskCategory;
@@ -273,8 +283,8 @@ export default function ScheduleSlotFormScreen() {
 
       <SelectSheet
         visible={timeSheetVisible}
-        title="Vælg tidspunkt"
-        options={times.map((t) => ({ value: t.id, label: t.time }))}
+        title={t('slotForm.selectTimeTitle')}
+        options={times.map((tm) => ({ value: tm.id, label: formatTimeDisplay(tm.time, timeFormat) }))}
         selected={timeId ? [timeId] : []}
         onSelect={(v) => setTimeId(v[0])}
         onClose={() => setTimeSheetVisible(false)}
@@ -283,7 +293,7 @@ export default function ScheduleSlotFormScreen() {
 
       <SelectSheet
         visible={itemsSheetVisible}
-        title="Vælg emner"
+        title={t('slotForm.selectItemsTitle')}
         multi
         options={categoryItems.map((i) => ({ value: i.id, label: i.name }))}
         selected={itemIds}

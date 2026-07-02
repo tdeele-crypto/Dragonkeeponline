@@ -13,7 +13,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { formatDateISO, formatFullDateDanish, isSameDay } from '@/constants/data';
+import { formatDateISO, isSameDay } from '@/constants/data';
+import { formatFullDate } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
@@ -27,7 +28,7 @@ const COLUMN_WIDTH = Math.min(SCREEN_WIDTH - 40, 360);
 export default function DagsoversigtScreen() {
   const router = useRouter();
   const showToast = useToast();
-  const { appBgColor, pageTitleColor } = useAdminSettings();
+  const { appBgColor, pageTitleColor, language, t } = useAdminSettings();
   const [date, setDate] = useState(new Date());
   const [overview, setOverview] = useState<DailyOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -39,7 +40,7 @@ export default function DagsoversigtScreen() {
       const data = await api.get(`/daily-overview?date=${formatDateISO(d)}`);
       setOverview(data);
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke hente dagsoversigt', 'error');
+      showToast(e.message || t('overview.fetchError'), 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -90,7 +91,7 @@ export default function DagsoversigtScreen() {
         date: formatDateISO(date),
       });
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke opdatere opgave', 'error');
+      showToast(e.message || t('overview.updateError'), 'error');
       fetchOverview(date, false);
     }
   };
@@ -101,10 +102,10 @@ export default function DagsoversigtScreen() {
     <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Dagsoversigt</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>{t('overview.title')}</Text>
         {!isToday && (
           <TouchableOpacity style={styles.todayBtn} onPress={goToday} testID="overview-today-button">
-            <Text style={styles.todayBtnText}>I dag</Text>
+            <Text style={styles.todayBtnText}>{t('overview.today')}</Text>
           </TouchableOpacity>
         )}
       </View>
@@ -114,7 +115,7 @@ export default function DagsoversigtScreen() {
           <Ionicons name="chevron-back" size={22} color={pageTitleColor || COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={[styles.navLabel, pageTitleColor ? { color: pageTitleColor } : null]}>
-          {formatFullDateDanish(date)}
+          {formatFullDate(date, language)}
         </Text>
         <TouchableOpacity style={styles.navBtn} onPress={() => changeDay(1)} testID="overview-next-day-button">
           <Ionicons name="chevron-forward" size={22} color={pageTitleColor || COLORS.textPrimary} />
@@ -131,14 +132,14 @@ export default function DagsoversigtScreen() {
           refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} />}
         >
           <Ionicons name="paw-outline" size={48} color={COLORS.textMuted} />
-          <Text style={styles.emptyTitle}>Ingen agamer endnu</Text>
-          <Text style={styles.emptySubtitle}>Tilføj din første agame for at se dagsoversigten</Text>
+          <Text style={styles.emptyTitle}>{t('overview.emptyTitle')}</Text>
+          <Text style={styles.emptySubtitle}>{t('overview.emptySubtitle')}</Text>
           <TouchableOpacity
             style={styles.addBtn}
             onPress={() => router.push('/dragon-form')}
             testID="overview-add-dragon-button"
           >
-            <Text style={styles.addBtnText}>Tilføj agame</Text>
+            <Text style={styles.addBtnText}>{t('overview.addDragon')}</Text>
           </TouchableOpacity>
         </ScrollView>
       ) : (

@@ -2,7 +2,9 @@ import React from 'react';
 import { Modal, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
-import { AGE_CATEGORIES, DAYS_OF_WEEK, DAY_LABELS } from '@/constants/data';
+import { DAYS_OF_WEEK } from '@/constants/data';
+import { AGE_CATEGORY_VALUES, getAgeLabel, getDayLabel } from '@/i18n/translations';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import type { AgeCategory, DayOfWeek } from '@/types';
 
 interface CopyToDaysSheetProps {
@@ -40,8 +42,9 @@ export default function CopyToDaysSheet({
   onSelectAllAges,
   onClose,
 }: CopyToDaysSheetProps) {
+  const { language, t } = useAdminSettings();
   const allDaysSelected = selectedDays.length === DAYS_OF_WEEK.length - 1;
-  const allAgesSelected = selectedAges.length === AGE_CATEGORIES.length - 1;
+  const allAgesSelected = selectedAges.length === AGE_CATEGORY_VALUES.length - 1;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>
@@ -50,20 +53,20 @@ export default function CopyToDaysSheet({
         <View style={styles.sheet}>
           <View style={styles.handle} />
           <View style={styles.header}>
-            <Text style={styles.title}>Kopier til dage & perioder</Text>
+            <Text style={styles.title}>{t('copyToDays.title')}</Text>
             <TouchableOpacity onPress={onClose} testID="copy-to-days-close-button" style={styles.closeBtn}>
               <Ionicons name="close" size={22} color={COLORS.textSecondary} />
             </TouchableOpacity>
           </View>
           <Text style={styles.subtitle}>
-            Opgaven oprettes automatisk for alle valgte dage og perioder. Den nuværende dag og periode er altid inkluderet.
+            {t('copyToDays.subtitle')}
           </Text>
 
           <ScrollView style={{ maxHeight: 420 }} showsVerticalScrollIndicator={false}>
             <View style={styles.groupHeader}>
-              <Text style={styles.groupTitle}>Ugedage</Text>
+              <Text style={styles.groupTitle}>{t('copyToDays.daysGroupTitle')}</Text>
               <TouchableOpacity onPress={onSelectAllDays} testID="copy-to-days-select-all-days">
-                <Text style={styles.selectAllText}>{allDaysSelected ? 'Fjern alle' : 'Vælg alle'}</Text>
+                <Text style={styles.selectAllText}>{allDaysSelected ? t('copyToDays.deselectAll') : t('copyToDays.selectAll')}</Text>
               </TouchableOpacity>
             </View>
             {DAYS_OF_WEEK.map((day) => {
@@ -79,40 +82,40 @@ export default function CopyToDaysSheet({
                 >
                   <Checkbox checked={isChecked} disabled={isCurrent} />
                   <Text style={[styles.optionText, isChecked && styles.optionTextSelected]}>
-                    {DAY_LABELS[day]}
+                    {getDayLabel(day, language)}
                   </Text>
-                  {isCurrent && <Text style={styles.currentTag}>Nuværende</Text>}
+                  {isCurrent && <Text style={styles.currentTag}>{t('copyToDays.current')}</Text>}
                 </TouchableOpacity>
               );
             })}
 
             <View style={styles.groupHeader}>
-              <Text style={styles.groupTitle}>Alderskategorier</Text>
+              <Text style={styles.groupTitle}>{t('copyToDays.agesGroupTitle')}</Text>
               <TouchableOpacity onPress={onSelectAllAges} testID="copy-to-days-select-all-ages">
-                <Text style={styles.selectAllText}>{allAgesSelected ? 'Fjern alle' : 'Vælg alle'}</Text>
+                <Text style={styles.selectAllText}>{allAgesSelected ? t('copyToDays.deselectAll') : t('copyToDays.selectAll')}</Text>
               </TouchableOpacity>
             </View>
-            {AGE_CATEGORIES.map((age) => {
-              const isCurrent = age.value === currentAge;
-              const isChecked = isCurrent || selectedAges.includes(age.value);
+            {AGE_CATEGORY_VALUES.map((ageValue) => {
+              const isCurrent = ageValue === currentAge;
+              const isChecked = isCurrent || selectedAges.includes(ageValue);
               return (
                 <TouchableOpacity
-                  key={age.value}
+                  key={ageValue}
                   style={[styles.option, isChecked && styles.optionSelected]}
-                  onPress={() => onToggleAge(age.value)}
+                  onPress={() => onToggleAge(ageValue)}
                   disabled={isCurrent}
-                  testID={`copy-to-days-age-${age.value}`}
+                  testID={`copy-to-days-age-${ageValue}`}
                 >
                   <Checkbox checked={isChecked} disabled={isCurrent} />
-                  <Text style={[styles.optionText, isChecked && styles.optionTextSelected]}>{age.label}</Text>
-                  {isCurrent && <Text style={styles.currentTag}>Nuværende</Text>}
+                  <Text style={[styles.optionText, isChecked && styles.optionTextSelected]}>{getAgeLabel(ageValue, language)}</Text>
+                  {isCurrent && <Text style={styles.currentTag}>{t('copyToDays.current')}</Text>}
                 </TouchableOpacity>
               );
             })}
           </ScrollView>
 
           <TouchableOpacity style={styles.doneBtn} onPress={onClose} testID="copy-to-days-done-button">
-            <Text style={styles.doneBtnText}>Færdig</Text>
+            <Text style={styles.doneBtnText}>{t('copyToDays.done')}</Text>
           </TouchableOpacity>
         </View>
       </View>

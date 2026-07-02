@@ -12,7 +12,8 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { AGE_CATEGORIES, DAYS_OF_WEEK, DAY_LABELS, DAY_LABELS_SHORT } from '@/constants/data';
+import { AGE_CATEGORIES, DAYS_OF_WEEK } from '@/constants/data';
+import { getAgeLabel, getDayLabel, getDayLabelShort, formatTimeDisplay } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
@@ -24,7 +25,7 @@ export default function ScheduleScreen() {
   const router = useRouter();
   const showToast = useToast();
   const showConfirm = useConfirm();
-  const { appBgColor, pageTitleColor } = useAdminSettings();
+  const { appBgColor, pageTitleColor, language, timeFormat, t } = useAdminSettings();
 
   const [ageCategory, setAgeCategory] = useState<AgeCategory>('2-4');
   const [dayOfWeek, setDayOfWeek] = useState<DayOfWeek>('mandag');
@@ -46,7 +47,7 @@ export default function ScheduleScreen() {
       setTimes(timesData);
       setItems(itemsData);
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke hente ugeplan', 'error');
+      showToast(e.message || t('schedule.fetchError'), 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -77,29 +78,29 @@ export default function ScheduleScreen() {
 
   const handleDeleteSlot = (slot: ScheduleSlot) => {
     showConfirm({
-      title: 'Slet opgave',
-      message: 'Skal opgaven kun slettes for denne dag, eller for alle ugedage hvor samme opgave er oprettet på samme tidspunkt?',
-      confirmLabel: 'Slet kun denne dag',
-      secondaryLabel: 'Slet for alle ugedage',
-      cancelLabel: 'Annuller',
+      title: t('schedule.deleteTitle'),
+      message: t('schedule.deleteMessage'),
+      confirmLabel: t('schedule.deleteThisDayOnly'),
+      secondaryLabel: t('schedule.deleteAllDays'),
+      cancelLabel: t('common.cancel'),
       destructive: true,
       secondaryDestructive: true,
       onConfirm: async () => {
         try {
           await api.delete(`/schedule-slots/${slot.id}`);
-          showToast('Opgave slettet', 'success');
+          showToast(t('schedule.deleteSuccess'), 'success');
           fetchData(false);
         } catch (e: any) {
-          showToast(e.message || 'Kunne ikke slette opgave', 'error');
+          showToast(e.message || t('schedule.deleteError'), 'error');
         }
       },
       onSecondaryConfirm: async () => {
         try {
           const res = await api.delete(`/schedule-slots/${slot.id}?all_days=true`);
-          showToast(`Opgave slettet for ${res?.deleted_count || 'alle'} ugedage`, 'success');
+          showToast(t('schedule.deleteAllSuccess', { n: res?.deleted_count || 'alle' }), 'success');
           fetchData(false);
         } catch (e: any) {
-          showToast(e.message || 'Kunne ikke slette opgave', 'error');
+          showToast(e.message || t('schedule.deleteError'), 'error');
         }
       },
     });
@@ -109,7 +110,7 @@ export default function ScheduleScreen() {
     <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Ugeplaner</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>{t('schedule.title')}</Text>
       </View>
 
       <ScrollView
@@ -126,7 +127,7 @@ export default function ScheduleScreen() {
             testID={`schedule-age-chip-${age.value}`}
           >
             <Text style={[styles.ageChipText, ageCategory === age.value && styles.ageChipTextActive]}>
-              {age.label}
+              {getAgeLabel(age.value, language)}
             </Text>
           </TouchableOpacity>
         ))}
@@ -146,13 +147,15 @@ export default function ScheduleScreen() {
             testID={`schedule-day-chip-${day}`}
           >
             <Text style={[styles.dayChipText, dayOfWeek === day && styles.dayChipTextActive]}>
-              {DAY_LABELS_SHORT[day]}
+              {getDayLabelShort(day, language)}
             </Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
 
-      <Text style={styles.sectionLabel}>{DAY_LABELS[dayOfWeek]} · {AGE_CATEGORIES.find((a) => a.value === ageCategory)?.label}</Text>
+      <Text style={styles.sectionLabel}>
+        {getDayLabel(dayOfWeek, language)} · {getAgeLabel(ageCategory, language)}
+      </Text>
 
       {loading ? (
         <View style={styles.centerBox}>
@@ -166,7 +169,7 @@ export default function ScheduleScreen() {
           {sortedSlots.length === 0 ? (
             <View style={styles.emptyBox}>
               <Ionicons name="calendar-outline" size={40} color={COLORS.textMuted} />
-              <Text style={styles.emptyText}>Ingen opgaver planlagt for denne dag endnu</Text>
+              <Text style={styles.emptyText}>{t('schedule.emptyText')}</Text>
             </View>
           ) : (
             sortedSlots.map((slot) => {
@@ -174,11 +177,11 @@ export default function ScheduleScreen() {
               return (
                 <View key={slot.id} style={styles.slotCard} testID={`schedule-slot-card-${slot.id}`}>
                   <View style={styles.slotInfo}>
-                    <Text style={styles.slotTime}>{timesMap.get(slot.time_id) || '??:??'}</Text>
+                    <Text style={styles.slotTime}>{formatTimeDisplay(timesMap.get(slot.time_id) || '??:??', timeFormat)}</Text>
                     <CategoryBadge category={slot.category} small />
                     {itemNames ? <Text style={styles.slotItems}>{itemNames}</Text> : null}
                     {slot.category === 'lys' && (
-                      <Text style={styles.slotAuto}>{slot.is_automatic ? 'Automatisk' : 'Manuel'}</Text>
+                      <Text style={styles.slotAuto}>{slot.is_automatic ? t('schedule.automatic') : t('schedule.manual')}</Text>
                     )}
                   </View>
                   <View style={styles.slotActions}>

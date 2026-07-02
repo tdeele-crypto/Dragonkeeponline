@@ -20,6 +20,7 @@ import { formatDateISO } from '@/constants/data';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
+import type { Language, WeightUnit, TimeFormat } from '@/i18n/translations';
 import PageBanner from '@/components/PageBanner';
 
 const SWATCH_COLORS = [
@@ -38,8 +39,19 @@ const SWATCH_COLORS = [
 export default function AdminScreen() {
   const showToast = useToast();
   const showConfirm = useConfirm();
-  const { bannerImage, bannerText, bannerBgColor, headingColor, appBgColor, pageTitleColor, refresh } =
-    useAdminSettings();
+  const {
+    bannerImage,
+    bannerText,
+    bannerBgColor,
+    headingColor,
+    appBgColor,
+    pageTitleColor,
+    language,
+    weightUnit,
+    timeFormat,
+    t,
+    refresh,
+  } = useAdminSettings();
 
   const [localImage, setLocalImage] = useState<string | null>(null);
   const [localText, setLocalText] = useState('');
@@ -53,6 +65,11 @@ export default function AdminScreen() {
   const [localPageTitleColor, setLocalPageTitleColor] = useState<string | null>(null);
   const [savingAppearance, setSavingAppearance] = useState(false);
 
+  const [localLanguage, setLocalLanguage] = useState<Language>('en');
+  const [localWeightUnit, setLocalWeightUnit] = useState<WeightUnit>('g');
+  const [localTimeFormat, setLocalTimeFormat] = useState<TimeFormat>('12h');
+  const [savingLang, setSavingLang] = useState(false);
+
   useEffect(() => {
     setLocalImage(bannerImage);
     setLocalText(bannerText);
@@ -65,10 +82,16 @@ export default function AdminScreen() {
     setLocalPageTitleColor(pageTitleColor);
   }, [appBgColor, pageTitleColor]);
 
+  useEffect(() => {
+    setLocalLanguage(language);
+    setLocalWeightUnit(weightUnit);
+    setLocalTimeFormat(timeFormat);
+  }, [language, weightUnit, timeFormat]);
+
   const pickBannerImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      showToast('Tilladelse er nødvendig for at vælge billede', 'error');
+      showToast(t('admin.bannerPermissionError'), 'error');
       return;
     }
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -93,9 +116,9 @@ export default function AdminScreen() {
         heading_color: localHeadingColor,
       });
       await refresh();
-      showToast('Banner gemt', 'success');
+      showToast(t('admin.bannerSaveSuccess'), 'success');
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke gemme banner', 'error');
+      showToast(e.message || t('admin.bannerSaveError'), 'error');
     } finally {
       setSavingBanner(false);
     }
@@ -113,11 +136,28 @@ export default function AdminScreen() {
         page_title_color: localPageTitleColor,
       });
       await refresh();
-      showToast('Udseende gemt', 'success');
+      showToast(t('admin.appearanceSaveSuccess'), 'success');
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke gemme udseende', 'error');
+      showToast(e.message || t('admin.appearanceSaveError'), 'error');
     } finally {
       setSavingAppearance(false);
+    }
+  };
+
+  const handleSaveLangSettings = async () => {
+    setSavingLang(true);
+    try {
+      await api.put('/admin/settings', {
+        language: localLanguage,
+        weight_unit: localWeightUnit,
+        time_format: localTimeFormat,
+      });
+      await refresh();
+      showToast(t('admin.langSaveSuccess'), 'success');
+    } catch (e: any) {
+      showToast(e.message || t('admin.langSaveError'), 'error');
+    } finally {
+      setSavingLang(false);
     }
   };
 
@@ -134,10 +174,10 @@ export default function AdminScreen() {
       if (canShare) {
         await Sharing.shareAsync(file.uri, { mimeType: 'application/json' });
       } else {
-        showToast('Database eksporteret', 'success');
+        showToast(t('admin.exportSuccess'), 'success');
       }
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke eksportere database', 'error');
+      showToast(e.message || t('admin.exportError'), 'error');
     } finally {
       setExporting(false);
     }
@@ -156,30 +196,31 @@ export default function AdminScreen() {
       const data = JSON.parse(text);
 
       if (!data.dragons || !data.task_items) {
-        showToast('Ugyldig backup-fil', 'error');
+        showToast(t('admin.importInvalidFile'), 'error');
         return;
       }
 
       showConfirm({
-        title: 'Importer database?',
-        message: 'Dette overskriver ALLE nuværende agamer, opgaver og ugeplaner med indholdet af filen. Kan ikke fortrydes.',
-        confirmLabel: 'Importer og overskriv',
+        title: t('admin.importConfirmTitle'),
+        message: t('admin.importConfirmMessage'),
+        confirmLabel: t('admin.importConfirmButton'),
+        cancelLabel: t('common.cancel'),
         destructive: true,
         onConfirm: async () => {
           setImporting(true);
           try {
             await api.post('/admin/import', data);
             await refresh();
-            showToast('Database importeret', 'success');
+            showToast(t('admin.importSuccess'), 'success');
           } catch (e: any) {
-            showToast(e.message || 'Kunne ikke importere database', 'error');
+            showToast(e.message || t('admin.importError'), 'error');
           } finally {
             setImporting(false);
           }
         },
       });
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke læse filen', 'error');
+      showToast(e.message || t('admin.importReadError'), 'error');
     }
   };
 
@@ -187,14 +228,14 @@ export default function AdminScreen() {
     <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Admin</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>{t('admin.title')}</Text>
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Database</Text>
+          <Text style={styles.sectionTitle}>{t('admin.dbSectionTitle')}</Text>
           <Text style={styles.sectionSubtitle}>
-            Eksporter alle dine data til en fil, som du kan gemme og importere igen ved skift til en ny enhed.
+            {t('admin.dbSectionSubtitle')}
           </Text>
 
           <TouchableOpacity
@@ -208,7 +249,7 @@ export default function AdminScreen() {
             ) : (
               <>
                 <Ionicons name="download-outline" size={18} color={COLORS.white} />
-                <Text style={styles.actionBtnText}>Eksporter database</Text>
+                <Text style={styles.actionBtnText}>{t('admin.exportButton')}</Text>
               </>
             )}
           </TouchableOpacity>
@@ -224,16 +265,16 @@ export default function AdminScreen() {
             ) : (
               <>
                 <Ionicons name="cloud-upload-outline" size={18} color={COLORS.primary} />
-                <Text style={styles.importBtnText}>Importer database</Text>
+                <Text style={styles.importBtnText}>{t('admin.importButton')}</Text>
               </>
             )}
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Banner</Text>
+          <Text style={styles.sectionTitle}>{t('admin.bannerSectionTitle')}</Text>
           <Text style={styles.sectionSubtitle}>
-            Vælg et billede der vises som banner i toppen af alle sider, og en valgfri tekst der lægges over billedet.
+            {t('admin.bannerSectionSubtitle')}
           </Text>
 
           <TouchableOpacity style={styles.bannerPreview} onPress={pickBannerImage} testID="admin-banner-picker">
@@ -242,7 +283,7 @@ export default function AdminScreen() {
             ) : (
               <View style={[styles.bannerPlaceholder, localBgColor ? { backgroundColor: localBgColor, borderStyle: 'solid' } : null]}>
                 <Ionicons name="image-outline" size={26} color={localBgColor ? COLORS.white : COLORS.textMuted} />
-                <Text style={[styles.bannerPlaceholderText, localBgColor ? { color: COLORS.white } : null]}>Vælg banner-billede</Text>
+                <Text style={[styles.bannerPlaceholderText, localBgColor ? { color: COLORS.white } : null]}>{t('admin.bannerChoosePlaceholder')}</Text>
               </View>
             )}
             {!!localText && (
@@ -259,21 +300,21 @@ export default function AdminScreen() {
 
           {localImage && (
             <TouchableOpacity onPress={handleRemoveBannerImage} testID="admin-banner-remove-button">
-              <Text style={styles.removeText}>Fjern billede</Text>
+              <Text style={styles.removeText}>{t('admin.bannerRemoveImage')}</Text>
             </TouchableOpacity>
           )}
 
-          <Text style={styles.label}>Bannertekst (valgfri)</Text>
+          <Text style={styles.label}>{t('admin.bannerTextLabel')}</Text>
           <TextInput
             style={styles.input}
             value={localText}
             onChangeText={setLocalText}
-            placeholder="F.eks. Velkommen til vores skægagamer"
+            placeholder={t('admin.bannerTextPlaceholder')}
             placeholderTextColor={COLORS.textMuted}
             testID="admin-banner-text-input"
           />
 
-          <Text style={styles.label}>Baggrundsfarve (kun når intet billede er valgt)</Text>
+          <Text style={styles.label}>{t('admin.bgColorLabel')}</Text>
           <View style={styles.swatchRow}>
             <TouchableOpacity
               style={[
@@ -303,7 +344,7 @@ export default function AdminScreen() {
             ))}
           </View>
 
-          <Text style={styles.label}>Overskriftsfarve</Text>
+          <Text style={styles.label}>{t('admin.headingColorLabel')}</Text>
           <View style={styles.swatchRow}>
             <TouchableOpacity
               style={[
@@ -339,14 +380,14 @@ export default function AdminScreen() {
             disabled={savingBanner}
             testID="admin-banner-save-button"
           >
-            {savingBanner ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>Gem banner</Text>}
+            {savingBanner ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>{t('admin.saveBannerButton')}</Text>}
           </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>App-udseende</Text>
+          <Text style={styles.sectionTitle}>{t('admin.appearanceSectionTitle')}</Text>
           <Text style={styles.sectionSubtitle}>
-            Vælg appens baggrundsfarve (bag sideoverskrifterne) og tekstfarven på titlerne &quot;Dagsoversigt&quot;, &quot;Agamer&quot;, &quot;Ugeplaner&quot; osv.
+            {t('admin.appearanceSectionSubtitle')}
           </Text>
 
           <View style={styles.appearancePreview} testID="admin-appearance-preview">
@@ -362,12 +403,12 @@ export default function AdminScreen() {
                   localPageTitleColor ? { color: localPageTitleColor } : null,
                 ]}
               >
-                Agamer
+                {t('tabs.dragons')}
               </Text>
             </View>
           </View>
 
-          <Text style={styles.label}>App-baggrundsfarve</Text>
+          <Text style={styles.label}>{t('admin.appBgColorLabel')}</Text>
           <View style={styles.swatchRow}>
             <TouchableOpacity
               style={[
@@ -396,7 +437,7 @@ export default function AdminScreen() {
             ))}
           </View>
 
-          <Text style={styles.label}>Sideoverskrift-farve</Text>
+          <Text style={styles.label}>{t('admin.pageTitleColorLabel')}</Text>
           <View style={styles.swatchRow}>
             <TouchableOpacity
               style={[
@@ -434,7 +475,87 @@ export default function AdminScreen() {
             {savingAppearance ? (
               <ActivityIndicator color={COLORS.white} />
             ) : (
-              <Text style={styles.saveBtnText}>Gem udseende</Text>
+              <Text style={styles.saveBtnText}>{t('admin.saveAppearanceButton')}</Text>
+            )}
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('admin.langSectionTitle')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('admin.langSectionSubtitle')}</Text>
+
+          <Text style={styles.label}>{t('admin.languageLabel')}</Text>
+          <View style={styles.optionRow}>
+            <TouchableOpacity
+              style={[styles.optionChip, localLanguage === 'da' && styles.optionChipActive]}
+              onPress={() => setLocalLanguage('da')}
+              testID="admin-language-da"
+            >
+              <Text style={[styles.optionChipText, localLanguage === 'da' && styles.optionChipTextActive]}>
+                {t('admin.languageDanish')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.optionChip, localLanguage === 'en' && styles.optionChipActive]}
+              onPress={() => setLocalLanguage('en')}
+              testID="admin-language-en"
+            >
+              <Text style={[styles.optionChipText, localLanguage === 'en' && styles.optionChipTextActive]}>
+                {t('admin.languageEnglish')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.label}>{t('admin.weightUnitLabel')}</Text>
+          <View style={styles.optionRow}>
+            <TouchableOpacity
+              style={[styles.optionChip, localWeightUnit === 'g' && styles.optionChipActive]}
+              onPress={() => setLocalWeightUnit('g')}
+              testID="admin-weight-unit-g"
+            >
+              <Text style={[styles.optionChipText, localWeightUnit === 'g' && styles.optionChipTextActive]}>g</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.optionChip, localWeightUnit === 'oz' && styles.optionChipActive]}
+              onPress={() => setLocalWeightUnit('oz')}
+              testID="admin-weight-unit-oz"
+            >
+              <Text style={[styles.optionChipText, localWeightUnit === 'oz' && styles.optionChipTextActive]}>oz</Text>
+            </TouchableOpacity>
+          </View>
+
+          <Text style={styles.label}>{t('admin.timeFormatLabel')}</Text>
+          <View style={styles.optionRow}>
+            <TouchableOpacity
+              style={[styles.optionChip, localTimeFormat === '12h' && styles.optionChipActive]}
+              onPress={() => setLocalTimeFormat('12h')}
+              testID="admin-time-format-12h"
+            >
+              <Text style={[styles.optionChipText, localTimeFormat === '12h' && styles.optionChipTextActive]}>
+                {t('admin.timeFormat12h')}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.optionChip, localTimeFormat === '24h' && styles.optionChipActive]}
+              onPress={() => setLocalTimeFormat('24h')}
+              testID="admin-time-format-24h"
+            >
+              <Text style={[styles.optionChipText, localTimeFormat === '24h' && styles.optionChipTextActive]}>
+                {t('admin.timeFormat24h')}
+              </Text>
+            </TouchableOpacity>
+          </View>
+
+          <TouchableOpacity
+            style={[styles.saveBtn, savingLang && styles.saveBtnDisabled]}
+            onPress={handleSaveLangSettings}
+            disabled={savingLang}
+            testID="admin-lang-save-button"
+          >
+            {savingLang ? (
+              <ActivityIndicator color={COLORS.white} />
+            ) : (
+              <Text style={styles.saveBtnText}>{t('admin.saveLangButton')}</Text>
             )}
           </TouchableOpacity>
         </View>
@@ -616,6 +737,33 @@ const styles = StyleSheet.create({
     fontSize: 22,
     fontWeight: '900',
     color: COLORS.textPrimary,
+  },
+  optionRow: {
+    flexDirection: 'row',
+    gap: 10,
+    marginBottom: 16,
+  },
+  optionChip: {
+    flex: 1,
+    minHeight: 46,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    backgroundColor: COLORS.background,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  optionChipActive: {
+    backgroundColor: COLORS.primary,
+    borderColor: COLORS.primary,
+  },
+  optionChipText: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textSecondary,
+  },
+  optionChipTextActive: {
+    color: COLORS.white,
   },
   label: {
     fontSize: 13,

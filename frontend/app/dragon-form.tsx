@@ -16,9 +16,11 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '@/constants/colors';
-import { AGE_CATEGORIES, GENDERS, computeAgeCategory } from '@/constants/data';
+import { computeAgeCategory } from '@/constants/data';
+import { getAgeLabel, getGenders, getGenderLabel } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useToast } from '@/context/OverlayContext';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import FormField from '@/components/FormField';
 import PickerField from '@/components/PickerField';
 import SelectSheet from '@/components/SelectSheet';
@@ -27,6 +29,7 @@ import type { Dragon } from '@/types';
 export default function DragonFormScreen() {
   const router = useRouter();
   const showToast = useToast();
+  const { language, t } = useAdminSettings();
   const { id } = useLocalSearchParams<{ id?: string }>();
   const isEdit = !!id;
 
@@ -56,13 +59,13 @@ export default function DragonFormScreen() {
           setBirthday(new Date(d.birthday));
           setPhoto(d.photo_base64 || null);
         })
-        .catch((e: any) => showToast(e.message || 'Kunne ikke hente agame', 'error'))
+        .catch((e: any) => showToast(e.message || t('dragonForm.fetchError'), 'error'))
         .finally(() => setLoading(false));
     }
   }, [id, isEdit, showToast]);
 
   const computedAgeCategory = useMemo(() => computeAgeCategory(birthday), [birthday]);
-  const computedAgeLabel = AGE_CATEGORIES.find((a) => a.value === computedAgeCategory)?.label;
+  const computedAgeLabel = getAgeLabel(computedAgeCategory, language);
 
   const pickPhoto = async (source: string[]) => {
     const isCamera = source[0] === 'camera';
@@ -70,7 +73,7 @@ export default function DragonFormScreen() {
       ? await ImagePicker.requestCameraPermissionsAsync()
       : await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (!permission.granted) {
-      showToast('Tilladelse er nødvendig for at tilføje billede', 'error');
+      showToast(t('dragonForm.permissionError'), 'error');
       return;
     }
     const options: ImagePicker.ImagePickerOptions = {
@@ -90,7 +93,7 @@ export default function DragonFormScreen() {
 
   const handleSave = async () => {
     if (!name.trim() || !gender || !color.trim() || !morph.trim()) {
-      showToast('Udfyld venligst alle felter', 'error');
+      showToast(t('dragonForm.validationError'), 'error');
       return;
     }
     setSaving(true);
@@ -105,14 +108,14 @@ export default function DragonFormScreen() {
     try {
       if (isEdit) {
         await api.put(`/dragons/${id}`, payload);
-        showToast('Agame opdateret', 'success');
+        showToast(t('dragonForm.updateSuccess'), 'success');
       } else {
         await api.post('/dragons', payload);
-        showToast('Agame tilføjet', 'success');
+        showToast(t('dragonForm.addSuccess'), 'success');
       }
       router.back();
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke gemme agame', 'error');
+      showToast(e.message || t('dragonForm.saveError'), 'error');
     } finally {
       setSaving(false);
     }
@@ -132,7 +135,7 @@ export default function DragonFormScreen() {
         <TouchableOpacity onPress={() => router.back()} testID="dragon-form-close-button" style={styles.closeBtn}>
           <Ionicons name="close" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEdit ? 'Rediger agame' : 'Ny agame'}</Text>
+        <Text style={styles.headerTitle}>{isEdit ? t('dragonForm.editTitle') : t('dragonForm.newTitle')}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -158,29 +161,29 @@ export default function DragonFormScreen() {
             </View>
           </TouchableOpacity>
 
-          <FormField label="Navn" testID="dragon-form-name-input" value={name} onChangeText={setName} placeholder="F.eks. Spike" />
+          <FormField label={t('dragonForm.nameLabel')} testID="dragon-form-name-input" value={name} onChangeText={setName} placeholder={t('dragonForm.namePlaceholder')} />
 
           <PickerField
-            label="Køn"
-            value={gender}
-            placeholder="Vælg køn"
+            label={t('dragonForm.genderLabel')}
+            value={gender ? getGenderLabel(gender, language) : ''}
+            placeholder={t('dragonForm.genderPlaceholder')}
             onPress={() => setGenderSheetVisible(true)}
             testID="dragon-form-gender-picker"
           />
 
-          <FormField label="Farve" testID="dragon-form-color-input" value={color} onChangeText={setColor} placeholder="F.eks. Orange" />
+          <FormField label={t('dragonForm.colorLabel')} testID="dragon-form-color-input" value={color} onChangeText={setColor} placeholder={t('dragonForm.colorPlaceholder')} />
 
-          <FormField label="Morph" testID="dragon-form-morph-input" value={morph} onChangeText={setMorph} placeholder="F.eks. Hypo Leatherback" />
+          <FormField label={t('dragonForm.morphLabel')} testID="dragon-form-morph-input" value={morph} onChangeText={setMorph} placeholder={t('dragonForm.morphPlaceholder')} />
 
           <PickerField
-            label="Fødselsdag"
-            value={birthday.toLocaleDateString('da-DK')}
+            label={t('dragonForm.birthdayLabel')}
+            value={birthday.toLocaleDateString(language === 'da' ? 'da-DK' : 'en-US')}
             onPress={() => setShowDatePicker(true)}
             testID="dragon-form-birthday-picker"
             icon="calendar-outline"
           />
 
-          <Text style={styles.label}>Alderskategori (beregnes automatisk)</Text>
+          <Text style={styles.label}>{t('dragonForm.ageAutoLabel')}</Text>
           <View style={styles.ageAutoBox} testID="dragon-form-age-category-computed">
             <Ionicons name="hourglass-outline" size={16} color={COLORS.primaryDark} />
             <Text style={styles.ageAutoText}>{computedAgeLabel}</Text>
@@ -195,7 +198,7 @@ export default function DragonFormScreen() {
             {saving ? (
               <ActivityIndicator color={COLORS.white} />
             ) : (
-              <Text style={styles.saveBtnText}>{isEdit ? 'Gem ændringer' : 'Tilføj agame'}</Text>
+              <Text style={styles.saveBtnText}>{isEdit ? t('dragonForm.saveChanges') : t('dragonForm.addDragon')}</Text>
             )}
           </TouchableOpacity>
         </ScrollView>
@@ -216,8 +219,8 @@ export default function DragonFormScreen() {
 
       <SelectSheet
         visible={genderSheetVisible}
-        title="Vælg køn"
-        options={GENDERS.map((g) => ({ value: g, label: g }))}
+        title={t('dragonForm.genderPlaceholder')}
+        options={getGenders(language)}
         selected={gender ? [gender] : []}
         onSelect={(v) => setGender(v[0])}
         onClose={() => setGenderSheetVisible(false)}
@@ -226,10 +229,10 @@ export default function DragonFormScreen() {
 
       <SelectSheet
         visible={photoSheetVisible}
-        title="Tilføj billede"
+        title={t('dragonForm.addPhotoTitle')}
         options={[
-          { value: 'camera', label: 'Tag foto', icon: 'camera-outline' },
-          { value: 'gallery', label: 'Vælg fra galleri', icon: 'images-outline' },
+          { value: 'camera', label: t('dragonForm.takePhoto'), icon: 'camera-outline' },
+          { value: 'gallery', label: t('dragonForm.chooseFromGallery'), icon: 'images-outline' },
         ]}
         selected={[]}
         onSelect={(v) => {

@@ -3,7 +3,7 @@ import { ScrollView, StyleSheet, Text, View } from 'react-native';
 import DragonAvatar from '@/components/DragonAvatar';
 import TaskRow from '@/components/TaskRow';
 import { COLORS } from '@/constants/colors';
-import { AGE_CATEGORIES } from '@/constants/data';
+import { getAgeLabel } from '@/i18n/translations';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import type { OverviewDragon } from '@/types';
 
@@ -14,8 +14,8 @@ interface DragonColumnProps {
 }
 
 export default function DragonColumn({ dragon, width, onToggleTask }: DragonColumnProps) {
-  const { pageTitleColor } = useAdminSettings();
-  const ageLabel = AGE_CATEGORIES.find((a) => a.value === dragon.age_category)?.label || dragon.age_category;
+  const { pageTitleColor, language, t } = useAdminSettings();
+  const ageLabel = getAgeLabel(dragon.age_category, language);
   const doneCount = dragon.tasks.filter((t) => t.completed || t.is_automatic).length;
 
   return (
@@ -41,14 +41,14 @@ export default function DragonColumn({ dragon, width, onToggleTask }: DragonColu
           style={[styles.progress, pageTitleColor ? { color: pageTitleColor } : null]}
           testID={`dragon-column-progress-${dragon.dragon_id}`}
         >
-          {doneCount} af {dragon.tasks.length} udført
+          {doneCount} {t('common.of')} {dragon.tasks.length} {t('common.done')}
         </Text>
       )}
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
         {dragon.tasks.length === 0 ? (
           <View style={styles.emptyBox}>
-            <Text style={styles.emptyText}>Ingen opgaver i dag for {ageLabel}</Text>
+            <Text style={styles.emptyText}>{t('dragonColumn.emptyTasks', { age: ageLabel })}</Text>
           </View>
         ) : (
           dragon.tasks.map((task) => (

@@ -14,9 +14,10 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '@/constants/colors';
-import { CATEGORY_LABELS } from '@/constants/data';
+import { getCategoryLabel, formatTimeDisplay } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useToast } from '@/context/OverlayContext';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import FormField from '@/components/FormField';
 import PickerField from '@/components/PickerField';
 import type { TaskCategory } from '@/types';
@@ -24,6 +25,7 @@ import type { TaskCategory } from '@/types';
 export default function ListItemFormScreen() {
   const router = useRouter();
   const showToast = useToast();
+  const { language, timeFormat, t } = useAdminSettings();
   const { category, id, currentName, currentTime, currentAutomatic } = useLocalSearchParams<{
     category: string;
     id?: string;
@@ -49,7 +51,7 @@ export default function ListItemFormScreen() {
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const titleLabel = isTime ? 'tidspunkt' : CATEGORY_LABELS[category as TaskCategory]?.toLowerCase();
+  const titleLabel = isTime ? t('listItemForm.timeWord') : getCategoryLabel(category as TaskCategory, language).toLowerCase();
 
   const handleSave = async () => {
     setSaving(true);
@@ -59,29 +61,29 @@ export default function ListItemFormScreen() {
         const mm = String(time.getMinutes()).padStart(2, '0');
         if (isEdit) {
           await api.put(`/times/${id}`, { time: `${hh}:${mm}` });
-          showToast('Tidspunkt opdateret', 'success');
+          showToast(t('listItemForm.timeUpdated'), 'success');
         } else {
           await api.post('/times', { time: `${hh}:${mm}` });
-          showToast('Tidspunkt tilføjet', 'success');
+          showToast(t('listItemForm.timeAdded'), 'success');
         }
       } else {
         if (!name.trim()) {
-          showToast('Angiv venligst et navn', 'error');
+          showToast(t('listItemForm.nameRequired'), 'error');
           setSaving(false);
           return;
         }
         const payload = { category, name: name.trim(), is_automatic: isLys ? isAutomatic : false };
         if (isEdit) {
           await api.put(`/task-items/${id}`, payload);
-          showToast('Emne opdateret', 'success');
+          showToast(t('listItemForm.itemUpdated'), 'success');
         } else {
           await api.post('/task-items', payload);
-          showToast('Emne tilføjet', 'success');
+          showToast(t('listItemForm.itemAdded'), 'success');
         }
       }
       router.back();
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke gemme', 'error');
+      showToast(e.message || t('listItemForm.saveError'), 'error');
     } finally {
       setSaving(false);
     }
@@ -93,7 +95,7 @@ export default function ListItemFormScreen() {
         <TouchableOpacity onPress={() => router.back()} testID="list-item-form-close-button" style={styles.closeBtn}>
           <Ionicons name="close" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>{isEdit ? 'Rediger' : 'Tilføj'} {titleLabel}</Text>
+        <Text style={styles.headerTitle}>{isEdit ? t('listItemForm.editPrefix') : t('listItemForm.addPrefix')} {titleLabel}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -101,19 +103,19 @@ export default function ListItemFormScreen() {
         <View style={styles.form}>
           {isTime ? (
             <PickerField
-              label="Tidspunkt"
-              value={time.toLocaleTimeString('da-DK', { hour: '2-digit', minute: '2-digit' })}
+              label={t('listItemForm.timeLabel')}
+              value={formatTimeDisplay(`${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`, timeFormat)}
               onPress={() => setShowTimePicker(true)}
               testID="list-item-form-time-picker"
               icon="time-outline"
             />
           ) : (
             <FormField
-              label="Navn"
+              label={t('listItemForm.nameLabel')}
               testID="list-item-form-name-input"
               value={name}
               onChangeText={setName}
-              placeholder="F.eks. Larver"
+              placeholder={t('listItemForm.namePlaceholder')}
               autoFocus
             />
           )}
@@ -121,8 +123,8 @@ export default function ListItemFormScreen() {
           {isLys && (
             <View style={styles.autoRow} testID="list-item-form-automatic-row">
               <View style={{ flex: 1 }}>
-                <Text style={styles.autoLabel}>Automatisk</Text>
-                <Text style={styles.autoSubLabel}>Ingen afkrydsning nødvendig på dagsoversigten</Text>
+                <Text style={styles.autoLabel}>{t('listItemForm.automaticLabel')}</Text>
+                <Text style={styles.autoSubLabel}>{t('listItemForm.automaticSubLabel')}</Text>
               </View>
               <Switch
                 value={isAutomatic}
@@ -139,7 +141,7 @@ export default function ListItemFormScreen() {
             disabled={saving}
             testID="list-item-form-save-button"
           >
-            {saving ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>{isEdit ? 'Gem ændringer' : 'Tilføj'}</Text>}
+            {saving ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>{isEdit ? t('listItemForm.saveChanges') : t('listItemForm.add')}</Text>}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

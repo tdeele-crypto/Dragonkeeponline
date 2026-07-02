@@ -2,7 +2,9 @@ import React from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { COLORS } from '@/constants/colors';
-import { CATEGORY_ICONS, CATEGORY_LABELS } from '@/constants/data';
+import { CATEGORY_ICONS } from '@/constants/data';
+import { getCategoryLabel } from '@/i18n/translations';
+import { useAdminSettings } from '@/context/AdminSettingsContext';
 import type { TaskCategory } from '@/types';
 
 interface CategoryBadgeProps {
@@ -11,6 +13,7 @@ interface CategoryBadgeProps {
 }
 
 export default function CategoryBadge({ category, small }: CategoryBadgeProps) {
+  const { language } = useAdminSettings();
   const palette = COLORS.categories[category];
   return (
     <View
@@ -23,7 +26,7 @@ export default function CategoryBadge({ category, small }: CategoryBadgeProps) {
     >
       <Ionicons name={CATEGORY_ICONS[category] as any} size={small ? 11 : 13} color={palette.text} />
       <Text style={[styles.text, { color: palette.text }, small && styles.textSmall]}>
-        {CATEGORY_LABELS[category]}
+        {getCategoryLabel(category, language)}
       </Text>
     </View>
   );

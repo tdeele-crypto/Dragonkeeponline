@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { AGE_CATEGORIES } from '@/constants/data';
+import { getAgeLabel, getGenderLabel } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
@@ -24,7 +24,7 @@ export default function DragonsScreen() {
   const router = useRouter();
   const showToast = useToast();
   const showConfirm = useConfirm();
-  const { appBgColor, pageTitleColor } = useAdminSettings();
+  const { appBgColor, pageTitleColor, language, t } = useAdminSettings();
   const [dragons, setDragons] = useState<Dragon[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -35,7 +35,7 @@ export default function DragonsScreen() {
       const data = await api.get('/dragons');
       setDragons(data);
     } catch (e: any) {
-      showToast(e.message || 'Kunne ikke hente agamer', 'error');
+      showToast(e.message || t('dragons.fetchError'), 'error');
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -55,17 +55,18 @@ export default function DragonsScreen() {
 
   const handleDelete = (dragon: Dragon) => {
     showConfirm({
-      title: `Slet ${dragon.name}?`,
-      message: 'Alle registreringer for denne agame vil blive fjernet. Dette kan ikke fortrydes.',
-      confirmLabel: 'Slet',
+      title: t('dragons.deleteTitle', { name: dragon.name }),
+      message: t('dragons.deleteMessage'),
+      confirmLabel: t('common.delete'),
+      cancelLabel: t('common.cancel'),
       destructive: true,
       onConfirm: async () => {
         try {
           await api.delete(`/dragons/${dragon.id}`);
-          showToast('Agame slettet', 'success');
+          showToast(t('dragons.deleteSuccess'), 'success');
           fetchDragons(false);
         } catch (e: any) {
-          showToast(e.message || 'Kunne ikke slette agame', 'error');
+          showToast(e.message || t('dragons.deleteError'), 'error');
         }
       },
     });
@@ -75,9 +76,9 @@ export default function DragonsScreen() {
     <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
-        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>Agamer</Text>
+        <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>{t('dragons.title')}</Text>
         <Text style={styles.count} testID="dragons-count">
-          {dragons.length} af {dragons.length}
+          {dragons.length} {t('common.of')} {dragons.length}
         </Text>
       </View>
 
@@ -93,18 +94,18 @@ export default function DragonsScreen() {
           {dragons.length === 0 && (
             <View style={styles.emptyBox}>
               <Ionicons name="paw-outline" size={44} color={COLORS.textMuted} />
-              <Text style={styles.emptyText}>Ingen agamer tilføjet endnu</Text>
+              <Text style={styles.emptyText}>{t('dragons.emptyText')}</Text>
             </View>
           )}
 
           {dragons.map((dragon) => {
-            const ageLabel = AGE_CATEGORIES.find((a) => a.value === dragon.age_category)?.label;
+            const ageLabel = getAgeLabel(dragon.age_category, language);
             return (
               <View key={dragon.id} style={styles.card} testID={`dragon-card-${dragon.id}`}>
                 <DragonAvatar photoBase64={dragon.photo_base64} size={60} />
                 <View style={styles.cardInfo}>
                   <Text style={styles.cardName} testID={`dragon-card-name-${dragon.id}`}>{dragon.name}</Text>
-                  <Text style={styles.cardMeta}>{dragon.gender} · {dragon.color} · {dragon.morph}</Text>
+                  <Text style={styles.cardMeta}>{getGenderLabel(dragon.gender, language)} · {dragon.color} · {dragon.morph}</Text>
                   <View style={styles.ageBadge}>
                     <Text style={styles.ageBadgeText}>{ageLabel}</Text>
                   </View>

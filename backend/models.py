@@ -7,6 +7,9 @@ AgeCategory = Literal["2-4", "4-7", "7-12", "12+"]
 TaskCategory = Literal["fodring", "pleje", "lys"]
 DayOfWeek = Literal["mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag", "søndag"]
 Gender = Literal["Han", "Hun", "Ukendt"]
+AppLanguage = Literal["en", "da"]
+WeightUnitPref = Literal["g", "oz"]
+TimeFormatPref = Literal["12h", "24h"]
 
 
 def compute_age_category(birthday: str) -> AgeCategory:
@@ -151,6 +154,9 @@ class AppSettings(BaseDocument):
     heading_color: Optional[str] = None
     app_bg_color: Optional[str] = None
     page_title_color: Optional[str] = None
+    language: AppLanguage = "en"
+    weight_unit: WeightUnitPref = "g"
+    time_format: TimeFormatPref = "12h"
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -161,3 +167,6 @@ class AppSettingsUpdate(BaseModel):
     heading_color: Optional[str] = None
     app_bg_color: Optional[str] = None
     page_title_color: Optional[str] = None
+    language: Optional[AppLanguage] = None
+    weight_unit: Optional[WeightUnitPref] = None
+    time_format: Optional[TimeFormatPref] = None

@@ -1,5 +1,6 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import { api } from '@/utils/api';
+import { t as translate, type Language, type WeightUnit, type TimeFormat } from '@/i18n/translations';
 
 interface AdminSettingsValue {
   bannerImage: string | null;
@@ -8,6 +9,10 @@ interface AdminSettingsValue {
   headingColor: string | null;
   appBgColor: string | null;
   pageTitleColor: string | null;
+  language: Language;
+  weightUnit: WeightUnit;
+  timeFormat: TimeFormat;
+  t: (key: string, vars?: Record<string, string | number>) => string;
   refresh: () => Promise<void>;
 }
 
@@ -20,6 +25,9 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
   const [headingColor, setHeadingColor] = useState<string | null>(null);
   const [appBgColor, setAppBgColor] = useState<string | null>(null);
   const [pageTitleColor, setPageTitleColor] = useState<string | null>(null);
+  const [language, setLanguage] = useState<Language>('en');
+  const [weightUnit, setWeightUnit] = useState<WeightUnit>('g');
+  const [timeFormat, setTimeFormat] = useState<TimeFormat>('12h');
 
   const refresh = useCallback(async () => {
     try {
@@ -30,9 +38,12 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
       setHeadingColor(data.heading_color || null);
       setAppBgColor(data.app_bg_color || null);
       setPageTitleColor(data.page_title_color || null);
+      setLanguage((data.language as Language) || 'en');
+      setWeightUnit((data.weight_unit as WeightUnit) || 'g');
+      setTimeFormat((data.time_format as TimeFormat) || '12h');
     } catch (e) {
-      // Banner is optional decoration - fail silently.
-      console.log('Kunne ikke hente banner-indstillinger:', e);
+      // Settings are optional decoration/preferences - fail silently.
+      console.log('Could not load admin settings:', e);
     }
   }, []);
 
@@ -40,9 +51,26 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
     refresh();
   }, [refresh]);
 
+  const t = useMemo(
+    () => (key: string, vars?: Record<string, string | number>) => translate(key, language, vars),
+    [language]
+  );
+
   return (
     <AdminSettingsContext.Provider
-      value={{ bannerImage, bannerText, bannerBgColor, headingColor, appBgColor, pageTitleColor, refresh }}
+      value={{
+        bannerImage,
+        bannerText,
+        bannerBgColor,
+        headingColor,
+        appBgColor,
+        pageTitleColor,
+        language,
+        weightUnit,
+        timeFormat,
+        t,
+        refresh,
+      }}
     >
       {children}
     </AdminSettingsContext.Provider>
