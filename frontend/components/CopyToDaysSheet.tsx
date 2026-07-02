@@ -40,8 +40,8 @@ export default function CopyToDaysSheet({
   onSelectAllAges,
   onClose,
 }: CopyToDaysSheetProps) {
-  const allDaysSelected = selectedDays.length === DAYS_OF_WEEK.length;
-  const allAgesSelected = selectedAges.length === AGE_CATEGORIES.length;
+  const allDaysSelected = selectedDays.length === DAYS_OF_WEEK.length - 1;
+  const allAgesSelected = selectedAges.length === AGE_CATEGORIES.length - 1;
 
   return (
     <Modal visible={visible} transparent animationType="slide" onRequestClose={onClose}>

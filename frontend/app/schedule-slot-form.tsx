@@ -93,13 +93,13 @@ export default function ScheduleSlotFormScreen() {
 
   const selectAllDays = () => {
     setSelectedDays((prev) =>
-      prev.length === DAYS_OF_WEEK.length ? [] : DAYS_OF_WEEK.filter((d) => d !== params.dayOfWeek)
+      prev.length === DAYS_OF_WEEK.length - 1 ? [] : DAYS_OF_WEEK.filter((d) => d !== params.dayOfWeek)
     );
   };
 
   const selectAllAges = () => {
     setSelectedAges((prev) =>
-      prev.length === AGE_CATEGORIES.length
+      prev.length === AGE_CATEGORIES.length - 1
         ? []
         : AGE_CATEGORIES.map((a) => a.value).filter((a) => a !== params.ageCategory)
     );

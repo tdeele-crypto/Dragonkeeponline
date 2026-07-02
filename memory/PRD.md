@@ -126,6 +126,28 @@ bruger opretter alt selv.
 - Tested via testing_agent_v4_expo: banner UI, color persistence, and
   fallback rendering across all tabs confirmed working; no regressions.
 
+## Feature additions (2026-07-02, session 5)
+- Automatisk alderskategori: fjernet manuelt "Alderskategori"-valg fra
+  dragon-form.tsx. Backend (`compute_age_category()` i models.py) beregner
+  nu alderskategori ud fra `birthday` hver gang en agame oprettes,
+  opdateres, listes eller læses - samt i daily-overview matching, så
+  ugeplanen altid følger dyrets faktiske alder. Dragoner under 2 måneder
+  clampes til "2-4". DragonCreate/DragonUpdate accepterer ikke længere
+  `age_category` fra klienten. Frontend viser en read-only badge
+  ("beregnes automatisk") der live-opdaterer ud fra valgt fødselsdag.
+- "Kopier til dage" i ugeplan: ny CopyToDaysSheet.tsx bundmenu i
+  schedule-slot-form.tsx med afkrydsning for alle 7 ugedage + 4
+  alderskategorier (nuværende dag/periode altid forudvalgt og låst).
+  Nyt backend-endpoint POST /api/schedule-slots/bulk-copy opretter/
+  overskriver (upsert på age_category+day_of_week+time_id+category) opgaven
+  for hele kombinationen af valgte dage × perioder, både ved oprettelse og
+  redigering (ved redigering + kopiering slettes den oprindelige slot først
+  for at undgå dubletter hvis tid/kategori er ændret).
+- Tested via testing_agent_v4_expo (17/17 backend tests). Fandt og fixede
+  en "Vælg alle" toggle-bug i CopyToDaysSheet/schedule-slot-form (sammenlignede
+  array-længde mod fuld kategori-count i stedet for count-1, da nuværende
+  dag/periode er udelukket fra selection-arrayet).
+
 ## Prioritized backlog / next tasks
 - P1: Push/local notification deep-testing on a real Android device (Expo Go
   limitations for background/killed app state).
