@@ -22,6 +22,22 @@ async def list_times():
     return [TimeSlot.from_mongo(d) for d in docs]
 
 
+@router.put("/{time_id}", response_model=TimeSlot, response_model_by_alias=False)
+async def update_time(time_id: str, payload: TimeSlotCreate):
+    try:
+        oid = to_object_id(time_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ugyldigt id")
+    existing = await db.times.find_one({"time": payload.time, "_id": {"$ne": oid}})
+    if existing:
+        raise HTTPException(status_code=400, detail="Dette tidspunkt findes allerede")
+    result = await db.times.update_one({"_id": oid}, {"$set": {"time": payload.time}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Tidspunkt ikke fundet")
+    doc = await db.times.find_one({"_id": oid})
+    return TimeSlot.from_mongo(doc)
+
+
 @router.delete("/{time_id}")
 async def delete_time(time_id: str):
     try:

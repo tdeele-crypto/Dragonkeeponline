@@ -23,11 +23,25 @@ import type { TaskCategory } from '@/types';
 export default function ListItemFormScreen() {
   const router = useRouter();
   const showToast = useToast();
-  const { category } = useLocalSearchParams<{ category: string }>();
+  const { category, id, currentName, currentTime } = useLocalSearchParams<{
+    category: string;
+    id?: string;
+    currentName?: string;
+    currentTime?: string;
+  }>();
   const isTime = category === 'tider';
+  const isEdit = !!id;
 
-  const [name, setName] = useState('');
-  const [time, setTime] = useState(new Date());
+  const [name, setName] = useState(currentName || '');
+  const [time, setTime] = useState(() => {
+    if (currentTime) {
+      const [hh, mm] = currentTime.split(':').map(Number);
+      const d = new Date();
+      d.setHours(hh, mm, 0, 0);
+      return d;
+    }
+    return new Date();
+  });
   const [showTimePicker, setShowTimePicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -39,16 +53,26 @@ export default function ListItemFormScreen() {
       if (isTime) {
         const hh = String(time.getHours()).padStart(2, '0');
         const mm = String(time.getMinutes()).padStart(2, '0');
-        await api.post('/times', { time: `${hh}:${mm}` });
-        showToast('Tidspunkt tilføjet', 'success');
+        if (isEdit) {
+          await api.put(`/times/${id}`, { time: `${hh}:${mm}` });
+          showToast('Tidspunkt opdateret', 'success');
+        } else {
+          await api.post('/times', { time: `${hh}:${mm}` });
+          showToast('Tidspunkt tilføjet', 'success');
+        }
       } else {
         if (!name.trim()) {
           showToast('Angiv venligst et navn', 'error');
           setSaving(false);
           return;
         }
-        await api.post('/task-items', { category, name: name.trim() });
-        showToast('Emne tilføjet', 'success');
+        if (isEdit) {
+          await api.put(`/task-items/${id}`, { category, name: name.trim() });
+          showToast('Emne opdateret', 'success');
+        } else {
+          await api.post('/task-items', { category, name: name.trim() });
+          showToast('Emne tilføjet', 'success');
+        }
       }
       router.back();
     } catch (e: any) {
@@ -64,7 +88,7 @@ export default function ListItemFormScreen() {
         <TouchableOpacity onPress={() => router.back()} testID="list-item-form-close-button" style={styles.closeBtn}>
           <Ionicons name="close" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Tilføj {titleLabel}</Text>
+        <Text style={styles.headerTitle}>{isEdit ? 'Rediger' : 'Tilføj'} {titleLabel}</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -95,7 +119,7 @@ export default function ListItemFormScreen() {
             disabled={saving}
             testID="list-item-form-save-button"
           >
-            {saving ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>Tilføj</Text>}
+            {saving ? <ActivityIndicator color={COLORS.white} /> : <Text style={styles.saveBtnText}>{isEdit ? 'Gem ændringer' : 'Tilføj'}</Text>}
           </TouchableOpacity>
         </View>
       </KeyboardAvoidingView>

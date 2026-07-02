@@ -199,7 +199,19 @@ export default function ListsScreen() {
                 <View key={time.id} style={styles.row} testID={`time-row-${time.id}`}>
                   <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
                   <Text style={styles.rowText}>{time.time}</Text>
-                  <TouchableOpacity onPress={() => handleDeleteTime(time)} testID={`time-delete-button-${time.id}`} style={styles.rowDeleteBtn}>
+                  <TouchableOpacity
+                    onPress={() =>
+                      router.push({
+                        pathname: '/list-item-form',
+                        params: { category: 'tider', id: time.id, currentTime: time.time },
+                      })
+                    }
+                    testID={`time-edit-button-${time.id}`}
+                    style={styles.rowIconBtn}
+                  >
+                    <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity onPress={() => handleDeleteTime(time)} testID={`time-delete-button-${time.id}`} style={styles.rowIconBtn}>
                     <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
                   </TouchableOpacity>
                 </View>
@@ -211,7 +223,19 @@ export default function ListsScreen() {
             filteredItems.map((item) => (
               <View key={item.id} style={styles.row} testID={`item-row-${item.id}`}>
                 <Text style={styles.rowText}>{item.name}</Text>
-                <TouchableOpacity onPress={() => handleDeleteItem(item)} testID={`item-delete-button-${item.id}`} style={styles.rowDeleteBtn}>
+                <TouchableOpacity
+                  onPress={() =>
+                    router.push({
+                      pathname: '/list-item-form',
+                      params: { category: item.category, id: item.id, currentName: item.name },
+                    })
+                  }
+                  testID={`item-edit-button-${item.id}`}
+                  style={styles.rowIconBtn}
+                >
+                  <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
+                </TouchableOpacity>
+                <TouchableOpacity onPress={() => handleDeleteItem(item)} testID={`item-delete-button-${item.id}`} style={styles.rowIconBtn}>
                   <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
                 </TouchableOpacity>
               </View>
@@ -333,7 +357,7 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: COLORS.textPrimary,
   },
-  rowDeleteBtn: {
+  rowIconBtn: {
     width: 36,
     height: 36,
     alignItems: 'center',

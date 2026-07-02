@@ -20,6 +20,19 @@ async def list_task_items(category: Optional[str] = Query(default=None)):
     return [TaskItem.from_mongo(d) for d in docs]
 
 
+@router.put("/{item_id}", response_model=TaskItem, response_model_by_alias=False)
+async def update_task_item(item_id: str, payload: TaskItemCreate):
+    try:
+        oid = to_object_id(item_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ugyldigt id")
+    result = await db.task_items.update_one({"_id": oid}, {"$set": {"name": payload.name}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Emne ikke fundet")
+    doc = await db.task_items.find_one({"_id": oid})
+    return TaskItem.from_mongo(doc)
+
+
 @router.delete("/{item_id}")
 async def delete_task_item(item_id: str):
     try:
