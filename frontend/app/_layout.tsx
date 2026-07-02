@@ -2,7 +2,6 @@ import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
 import { LogBox } from "react-native";
-import { useFonts } from "expo-font";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { useIconFonts } from "@/src/hooks/use-icon-fonts";
@@ -22,16 +21,12 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [iconsLoaded, iconsError] = useIconFonts();
-  const [customFontsLoaded] = useFonts({
-    "Nunito": require("../assets/fonts/Nunito-Regular.ttf"),
-    "Manrope": require("../assets/fonts/Manrope-Regular.ttf"),
-  });
 
   useEffect(() => {
-    if ((iconsLoaded || iconsError) && customFontsLoaded) {
+    if (iconsLoaded || iconsError) {
       SplashScreen.hideAsync();
     }
-  }, [iconsLoaded, iconsError, customFontsLoaded]);
+  }, [iconsLoaded, iconsError]);
 
   useEffect(() => {
     ensureNotificationChannel();
@@ -39,7 +34,7 @@ export default function RootLayout() {
 
   // If the CDN is unreachable we fall through on error rather than wedging
   // the app — icons will tofu, but the app still boots.
-  if (!(iconsLoaded || iconsError) || !customFontsLoaded) return null;
+  if (!(iconsLoaded || iconsError)) return null;
 
   return (
     <SafeAreaProvider>
