@@ -76,6 +76,15 @@ export interface AppSettings {
   updated_at: string;
 }
 
+export interface WeightEntry {
+  id: string;
+  dragon_id: string;
+  weight_grams: number;
+  note?: string | null;
+  date: string;
+  created_at: string;
+}
+
 export interface DatabaseExport {
   version: number;
   exported_at: string;
@@ -84,5 +93,6 @@ export interface DatabaseExport {
   times: any[];
   schedule_slots: any[];
   completions: any[];
+  weight_entries: any[];
   app_settings: any[];
 }

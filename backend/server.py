@@ -2,7 +2,7 @@ from fastapi import APIRouter, FastAPI
 from starlette.middleware.cors import CORSMiddleware
 import logging
 
-from routes import dragons, task_items, times, schedule_slots, overview, admin
+from routes import dragons, task_items, times, schedule_slots, overview, admin, weights
 
 app = FastAPI(title="Bearded Dragon Care API")
 
@@ -20,6 +20,7 @@ api_router.include_router(times.router)
 api_router.include_router(schedule_slots.router)
 api_router.include_router(overview.router)
 api_router.include_router(admin.router)
+api_router.include_router(weights.router)
 
 app.include_router(api_router)
 

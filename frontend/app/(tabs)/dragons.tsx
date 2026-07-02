@@ -112,6 +112,15 @@ export default function DragonsScreen() {
                 <View style={styles.cardActions}>
                   <TouchableOpacity
                     style={styles.iconBtn}
+                    onPress={() =>
+                      router.push({ pathname: '/dragon-weight', params: { id: dragon.id, name: dragon.name } })
+                    }
+                    testID={`dragon-weight-button-${dragon.id}`}
+                  >
+                    <Ionicons name="scale-outline" size={20} color={COLORS.textSecondary} />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.iconBtn}
                     onPress={() => router.push({ pathname: '/dragon-form', params: { id: dragon.id } })}
                     testID={`dragon-edit-button-${dragon.id}`}
                   >

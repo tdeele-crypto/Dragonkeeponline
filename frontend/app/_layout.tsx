@@ -46,6 +46,7 @@ export default function RootLayout() {
             <Stack.Screen name="dragon-form" options={{ presentation: "modal" }} />
             <Stack.Screen name="schedule-slot-form" options={{ presentation: "modal" }} />
             <Stack.Screen name="list-item-form" options={{ presentation: "modal" }} />
+            <Stack.Screen name="dragon-weight" options={{ presentation: "modal" }} />
           </Stack>
         </AdminSettingsProvider>
       </OverlayProvider>

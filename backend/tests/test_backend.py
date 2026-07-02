@@ -112,7 +112,9 @@ class TestDragonsAgeCategory:
         r = api_client.get(f"{API}/dragons/000000000000000000000000")
         assert r.status_code == 404
 
-    def test_max_5_dragons_enforced(self, api_client):
+    def test_unlimited_dragons_no_cap_enforced(self, api_client):
+        """MAX_DRAGONS cap was intentionally removed (unlimited dragons feature).
+        A 6th dragon should succeed with 200, not be rejected with 400."""
         existing = api_client.get(f"{API}/dragons").json()
         created_ids = []
         to_create = max(5 - len(existing), 0)
@@ -124,15 +126,15 @@ class TestDragonsAgeCategory:
             assert r.status_code == 200
             created_ids.append(r.json()["id"])
 
-        count_r = api_client.get(f"{API}/dragons")
-        assert len(count_r.json()) == 5
-
         sixth_r = api_client.post(f"{API}/dragons", json={
             "name": "TEST_Sixth", "gender": "Han", "color": "Red",
             "morph": "Standard", "birthday": months_ago_date(1),
         })
-        assert sixth_r.status_code == 400
-        assert "Maksimalt" in sixth_r.json()["detail"]
+        assert sixth_r.status_code == 200
+        created_ids.append(sixth_r.json()["id"])
+
+        for did in created_ids:
+            api_client.delete(f"{API}/dragons/{did}")
 
         for did in created_ids:
             api_client.delete(f"{API}/dragons/{did}")

@@ -72,4 +72,5 @@ async def delete_dragon(dragon_id: str):
     if result.deleted_count == 0:
         raise HTTPException(status_code=404, detail="Agame ikke fundet")
     await db.completions.delete_many({"dragon_id": dragon_id})
+    await db.weight_entries.delete_many({"dragon_id": dragon_id})
     return {"success": True}

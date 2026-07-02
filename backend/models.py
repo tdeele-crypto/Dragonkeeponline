@@ -116,6 +116,20 @@ class ScheduleSlotBulkCopy(BaseModel):
     is_automatic: bool = False
 
 
+class WeightEntry(BaseDocument):
+    dragon_id: str
+    weight_grams: float
+    note: Optional[str] = None
+    date: str
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class WeightEntryCreate(BaseModel):
+    weight_grams: float
+    note: Optional[str] = None
+    date: str
+
+
 class Completion(BaseDocument):
     dragon_id: str
     schedule_slot_id: str

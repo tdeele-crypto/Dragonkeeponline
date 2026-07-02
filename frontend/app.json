@@ -13,7 +13,8 @@
       "infoPlist": {
         "NSCameraUsageDescription": "Tag et billede af din agame",
         "NSPhotoLibraryUsageDescription": "Vælg et billede af din agame fra galleriet"
-      }
+      },
+      "bundleIdentifier": "com.emergent.beardedbuddylog.p5bd1f"
     },
     "android": {
       "adaptiveIcon": {
@@ -24,7 +25,8 @@
       "permissions": [
         "android.permission.SCHEDULE_EXACT_ALARM",
         "android.permission.CAMERA"
-      ]
+      ],
+      "package": "com.emergent.beardedbuddylog.p5bd1f"
     },
     "web": {
       "bundler": "metro",

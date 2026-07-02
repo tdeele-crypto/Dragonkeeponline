@@ -89,6 +89,14 @@ export function formatFullDateDanish(d: Date): string {
   return `${dayLabel} ${d.getDate()}. ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
 }
 
+export function formatDateDanish(d: Date): string {
+  return `${d.getDate()}. ${MONTH_NAMES[d.getMonth()]} ${d.getFullYear()}`;
+}
+
+export function formatDateShortDanish(d: Date): string {
+  return `${d.getDate()}/${d.getMonth() + 1}`;
+}
+
 export function isSameDay(a: Date, b: Date): boolean {
   return (
     a.getFullYear() === b.getFullYear() &&

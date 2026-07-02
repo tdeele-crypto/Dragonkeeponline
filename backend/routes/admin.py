@@ -46,6 +46,7 @@ async def export_database():
     times = await db.times.find().to_list(10000)
     schedule_slots = await db.schedule_slots.find().to_list(10000)
     completions = await db.completions.find().to_list(10000)
+    weight_entries = await db.weight_entries.find().to_list(10000)
     settings_doc = await db.app_settings.find_one({"key": SETTINGS_KEY})
 
     return {
@@ -56,6 +57,7 @@ async def export_database():
         "times": _stringify_ids(times),
         "schedule_slots": _stringify_ids(schedule_slots),
         "completions": _stringify_ids(completions),
+        "weight_entries": _stringify_ids(weight_entries),
         "app_settings": _stringify_ids([settings_doc]) if settings_doc else [],
     }
 
@@ -88,6 +90,7 @@ async def import_database(payload: dict = Body(...)):
     await db.times.delete_many({})
     await db.schedule_slots.delete_many({})
     await db.completions.delete_many({})
+    await db.weight_entries.delete_many({})
 
     if payload["dragons"]:
         await db.dragons.insert_many(_restore_object_ids(payload["dragons"]))
@@ -99,6 +102,8 @@ async def import_database(payload: dict = Body(...)):
         await db.schedule_slots.insert_many(_restore_object_ids(payload["schedule_slots"]))
     if payload["completions"]:
         await db.completions.insert_many(_restore_object_ids(payload["completions"]))
+    if payload.get("weight_entries"):
+        await db.weight_entries.insert_many(_restore_object_ids(payload["weight_entries"]))
 
     if payload.get("app_settings"):
         await db.app_settings.delete_many({"key": SETTINGS_KEY})
