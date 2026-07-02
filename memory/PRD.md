@@ -167,6 +167,24 @@ bruger opretter alt selv.
   eksisterende regression), frontend bekræftet virker konsistent på alle 5
   faner, none/reset-fallback virker, banner-indstillinger påvirkes ikke.
 
+## Feature additions (2026-07-02, session 7)
+- Uendeligt antal agamer: fjernet MAX_DRAGONS=5 begrænsning helt (backend
+  dragons.py + frontend dragons.tsx/constants). "+"-knappen er nu altid
+  synlig, og header-tælleren viser "N af N" (samlet antal, ikke længere et
+  fast max).
+- Slet ugeplan-opgave med valg af omfang: nyt 3-knaps bekræft-flow i
+  OverlayContext (secondaryLabel/onSecondaryConfirm) - "Slet kun denne dag"
+  vs. "Slet for alle ugedage" (matcher age_category+time_id+category tværs
+  af alle 7 dage) vs. "Annuller". Backend DELETE /api/schedule-slots/{id}
+  har nu ?all_days=true query param.
+- Sideoverskrift-farve (page_title_color) udvidet til også at gælde:
+  datoteksten på Dagsoversigt ("Torsdag d. 2. Juli 2026"), agamens navn og
+  "X af Y udført"-teksten i DragonColumn.
+- Ugeplaner: den aktive ugedag-chip er ændret fra sort til lys grå
+  (#D9D6D2) baggrund med mørk tekst.
+- Tested via testing_agent_v4_expo: 3/3 nye backend-tests + fuld
+  regression, alt bekræftet virker.
+
 ## Prioritized backlog / next tasks
 - P1: Push/local notification deep-testing on a real Android device (Expo Go
   limitations for background/killed app state).
