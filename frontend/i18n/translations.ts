@@ -237,6 +237,16 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'admin.careplanResetSuccess': 'Plejeplan indlæst: {{times}} tider, {{items}} emner, {{slots}} ugeplan-opgaver',
     'admin.careplanResetError': 'Kunne ikke nulstille plejeplan',
 
+    'admin.seasonSectionTitle': 'Sæsonbestemt lysjustering',
+    'admin.seasonSectionSubtitle':
+      'I vinterperioden afkortes dagslys/varme-tiderne automatisk på Dagsoversigten, symmetrisk fra begge ender af dagen. Ugeplanerne selv ændres ikke.',
+    'admin.seasonSummerLabel': 'Sommer starter (dag-måned)',
+    'admin.seasonWinterLabel': 'Vinter starter (dag-måned)',
+    'admin.seasonHoursLabel': 'Afkort lys/varme med (timer)',
+    'admin.seasonUpdateSuccess': 'Sæsonindstilling opdateret',
+    'admin.seasonUpdateError': 'Kunne ikke opdatere sæsonindstilling',
+    'admin.seasonWinterBadge': 'Vinterperiode - lys afkortet',
+
     'copyToDays.title': 'Kopier til dage & perioder',
     'copyToDays.subtitle':
       'Opgaven oprettes automatisk for alle valgte dage og perioder. Den nuværende dag og periode er altid inkluderet.',
@@ -487,6 +497,16 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'admin.careplanConfirmMismatch': 'You must type "RESET" to confirm',
     'admin.careplanResetSuccess': 'Care plan loaded: {{times}} times, {{items}} items, {{slots}} schedule tasks',
     'admin.careplanResetError': 'Could not reset care plan',
+
+    'admin.seasonSectionTitle': 'Seasonal Light Adjustment',
+    'admin.seasonSectionSubtitle':
+      'During the winter period, light/heat times are automatically shortened on the Daily Overview, symmetrically from both ends of the day. The Schedules themselves are not changed.',
+    'admin.seasonSummerLabel': 'Summer starts (day-month)',
+    'admin.seasonWinterLabel': 'Winter starts (day-month)',
+    'admin.seasonHoursLabel': 'Shorten light/heat by (hours)',
+    'admin.seasonUpdateSuccess': 'Season setting updated',
+    'admin.seasonUpdateError': 'Could not update season setting',
+    'admin.seasonWinterBadge': 'Winter period - light shortened',
 
     'copyToDays.title': 'Copy to days & periods',
     'copyToDays.subtitle':

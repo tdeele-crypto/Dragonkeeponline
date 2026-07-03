@@ -3,6 +3,7 @@ import {
   ActivityIndicator,
   Image,
   Modal,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -16,6 +17,7 @@ import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import { File, Paths } from 'expo-file-system';
+import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '@/constants/colors';
 import { formatDateISO } from '@/constants/data';
 import { api } from '@/utils/api';
@@ -23,6 +25,27 @@ import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import type { Language, WeightUnit, TimeFormat } from '@/i18n/translations';
 import PageBanner from '@/components/PageBanner';
+import PickerField from '@/components/PickerField';
+
+function monthDayToDate(mmdd: string): Date {
+  const [m, d] = (mmdd || '03-01').split('-').map((n) => parseInt(n, 10));
+  const dt = new Date();
+  dt.setMonth((Number.isFinite(m) ? m : 1) - 1, Number.isFinite(d) ? d : 1);
+  dt.setHours(12, 0, 0, 0);
+  return dt;
+}
+
+function dateToMonthDay(dt: Date): string {
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  const d = String(dt.getDate()).padStart(2, '0');
+  return `${m}-${d}`;
+}
+
+function formatDayMonth(dt: Date): string {
+  const d = String(dt.getDate()).padStart(2, '0');
+  const m = String(dt.getMonth() + 1).padStart(2, '0');
+  return `${d}-${m}`;
+}
 
 const SWATCH_COLORS = [
   '#E07A5F',
@@ -50,6 +73,9 @@ export default function AdminScreen() {
     language,
     weightUnit,
     timeFormat,
+    lightSummerStart,
+    lightWinterStart,
+    lightWinterShortenHours,
     t,
     refresh,
   } = useAdminSettings();
@@ -70,6 +96,13 @@ export default function AdminScreen() {
   const [localWeightUnit, setLocalWeightUnit] = useState<WeightUnit>('g');
   const [localTimeFormat, setLocalTimeFormat] = useState<TimeFormat>('12h');
   const [savingLang, setSavingLang] = useState(false);
+
+  const [summerDate, setSummerDate] = useState<Date>(() => monthDayToDate('03-01'));
+  const [winterDate, setWinterDate] = useState<Date>(() => monthDayToDate('09-01'));
+  const [hoursInput, setHoursInput] = useState('3');
+  const [showSummerPicker, setShowSummerPicker] = useState(false);
+  const [showWinterPicker, setShowWinterPicker] = useState(false);
+  const [savingSeason, setSavingSeason] = useState(false);
 
   const [careplanModalVisible, setCareplanModalVisible] = useState(false);
   const [careplanConfirmInput, setCareplanConfirmInput] = useState('');
@@ -92,6 +125,48 @@ export default function AdminScreen() {
     setLocalWeightUnit(weightUnit);
     setLocalTimeFormat(timeFormat);
   }, [language, weightUnit, timeFormat]);
+
+  useEffect(() => {
+    setSummerDate(monthDayToDate(lightSummerStart));
+    setWinterDate(monthDayToDate(lightWinterStart));
+    setHoursInput(String(lightWinterShortenHours));
+  }, [lightSummerStart, lightWinterStart, lightWinterShortenHours]);
+
+  const saveSeasonSetting = async (payload: Record<string, string | number>) => {
+    setSavingSeason(true);
+    try {
+      await api.put('/admin/settings', payload);
+      await refresh();
+      showToast(t('admin.seasonUpdateSuccess'), 'success');
+    } catch (e: any) {
+      showToast(e.message || t('admin.seasonUpdateError'), 'error');
+    } finally {
+      setSavingSeason(false);
+    }
+  };
+
+  const onSummerDateChange = (event: any, selectedDate?: Date) => {
+    setShowSummerPicker(Platform.OS === 'ios');
+    if (event.type === 'dismissed' || !selectedDate) return;
+    setSummerDate(selectedDate);
+    saveSeasonSetting({ light_summer_start: dateToMonthDay(selectedDate) });
+  };
+
+  const onWinterDateChange = (event: any, selectedDate?: Date) => {
+    setShowWinterPicker(Platform.OS === 'ios');
+    if (event.type === 'dismissed' || !selectedDate) return;
+    setWinterDate(selectedDate);
+    saveSeasonSetting({ light_winter_start: dateToMonthDay(selectedDate) });
+  };
+
+  const commitHoursInput = () => {
+    const parsed = parseFloat(hoursInput.replace(',', '.'));
+    const safeValue = Number.isFinite(parsed) && parsed >= 0 ? parsed : lightWinterShortenHours;
+    setHoursInput(String(safeValue));
+    if (safeValue !== lightWinterShortenHours) {
+      saveSeasonSetting({ light_winter_shorten_hours: safeValue });
+    }
+  };
 
   const pickBannerImage = async () => {
     const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -269,6 +344,43 @@ export default function AdminScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('admin.seasonSectionTitle')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('admin.seasonSectionSubtitle')}</Text>
+
+          <PickerField
+            label={t('admin.seasonSummerLabel')}
+            value={formatDayMonth(summerDate)}
+            onPress={() => setShowSummerPicker(true)}
+            testID="admin-season-summer-picker"
+            icon="sunny-outline"
+          />
+
+          <PickerField
+            label={t('admin.seasonWinterLabel')}
+            value={formatDayMonth(winterDate)}
+            onPress={() => setShowWinterPicker(true)}
+            testID="admin-season-winter-picker"
+            icon="snow-outline"
+          />
+
+          <Text style={styles.label}>{t('admin.seasonHoursLabel')}</Text>
+          <TextInput
+            style={styles.input}
+            value={hoursInput}
+            onChangeText={setHoursInput}
+            onBlur={commitHoursInput}
+            onEndEditing={commitHoursInput}
+            keyboardType="decimal-pad"
+            placeholder="3"
+            placeholderTextColor={COLORS.textMuted}
+            testID="admin-season-hours-input"
+          />
+          {savingSeason && (
+            <ActivityIndicator color={COLORS.primary} size="small" testID="admin-season-saving-indicator" />
+          )}
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('admin.dbSectionTitle')}</Text>
           <Text style={styles.sectionSubtitle}>
@@ -611,6 +723,24 @@ export default function AdminScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      {showSummerPicker && (
+        <DateTimePicker
+          value={summerDate}
+          mode="date"
+          display="default"
+          onChange={onSummerDateChange}
+        />
+      )}
+
+      {showWinterPicker && (
+        <DateTimePicker
+          value={winterDate}
+          mode="date"
+          display="default"
+          onChange={onWinterDateChange}
+        />
+      )}
 
       <Modal
         visible={careplanModalVisible}

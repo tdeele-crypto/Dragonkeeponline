@@ -122,6 +122,13 @@ export default function DagsoversigtScreen() {
         </TouchableOpacity>
       </View>
 
+      {overview?.is_winter_period && (
+        <View style={styles.winterBadge} testID="overview-winter-badge">
+          <Ionicons name="snow-outline" size={14} color={COLORS.primaryDark} />
+          <Text style={styles.winterBadgeText}>{t('admin.seasonWinterBadge')}</Text>
+        </View>
+      )}
+
       {loading ? (
         <View style={styles.centerBox}>
           <ActivityIndicator color={COLORS.primary} size="large" testID="overview-loading" />
@@ -216,6 +223,22 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.textSecondary,
     textTransform: 'capitalize',
+  },
+  winterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    gap: 6,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 999,
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    marginBottom: 12,
+  },
+  winterBadgeText: {
+    color: COLORS.primaryDark,
+    fontSize: 12,
+    fontWeight: '700',
   },
   columnsWrapper: {
     paddingHorizontal: 20,

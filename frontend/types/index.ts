@@ -71,6 +71,7 @@ export interface OverviewDragon {
 export interface DailyOverview {
   date: string;
   day_of_week: DayOfWeek;
+  is_winter_period: boolean;
   dragons: OverviewDragon[];
 }
 
@@ -78,6 +79,12 @@ export interface AppSettings {
   id: string;
   banner_image_base64?: string | null;
   banner_text?: string | null;
+  language?: 'en' | 'da';
+  weight_unit?: 'g' | 'oz';
+  time_format?: '12h' | '24h';
+  light_summer_start?: string;
+  light_winter_start?: string;
+  light_winter_shorten_hours?: number;
   updated_at: string;
 }
 

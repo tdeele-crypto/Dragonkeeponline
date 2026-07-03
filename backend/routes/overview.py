@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, Query
 from datetime import date as date_cls, datetime, UTC
 from database import db
 from models import CompletionToggle, Completion, compute_age_category
+from services.season import is_in_winter_period, apply_winter_light_shift
 
 router = APIRouter(tags=["overview"])
 
@@ -27,6 +28,12 @@ async def get_daily_overview(date: str = Query(...)):
     items_map = {str(i["_id"]): (i.get(name_field) or i.get("name")) for i in task_items}
     completions = await db.completions.find({"date": date}).to_list(1000)
     completion_map = {(c["dragon_id"], c["schedule_slot_id"]): c["completed"] for c in completions}
+
+    summer_start = (settings_doc or {}).get("light_summer_start", "03-01")
+    winter_start = (settings_doc or {}).get("light_winter_start", "09-01")
+    shorten_hours = (settings_doc or {}).get("light_winter_shorten_hours", 3.0) or 0
+    in_winter = is_in_winter_period(date_cls(y, m, d), summer_start, winter_start)
+    shift_minutes = int(round((shorten_hours / 2) * 60)) if in_winter else 0
 
     result = []
     for dragon in dragons:
@@ -57,6 +64,7 @@ async def get_daily_overview(date: str = Query(...)):
                 "completed": completion_map.get((dragon_id, slot_id), False),
             })
         tasks.sort(key=lambda t: t["time"])
+        apply_winter_light_shift(tasks, shift_minutes)
         result.append({
             "dragon_id": dragon_id,
             "name": dragon["name"],
@@ -66,7 +74,7 @@ async def get_daily_overview(date: str = Query(...)):
             "tasks": tasks,
         })
 
-    return {"date": date, "day_of_week": day_of_week, "dragons": result}
+    return {"date": date, "day_of_week": day_of_week, "is_winter_period": in_winter, "dragons": result}
 
 
 @router.post("/completions/toggle")
