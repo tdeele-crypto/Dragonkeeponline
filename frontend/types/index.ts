@@ -26,6 +26,9 @@ export interface TaskItem {
   id: string;
   category: TaskCategory;
   name: string;
+  name_da?: string | null;
+  name_en?: string | null;
+  is_automatic: boolean;
   created_at: string;
 }
 

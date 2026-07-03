@@ -2,7 +2,8 @@ from fastapi import APIRouter, HTTPException, Body
 from datetime import datetime, UTC
 from bson import ObjectId
 from database import db
-from models import AppSettings, AppSettingsUpdate
+from models import AppSettings, AppSettingsUpdate, TimeSlot, TaskItem, ScheduleSlot
+from services.careplan_seed import TIMES, ITEMS, build_slots
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -110,3 +111,54 @@ async def import_database(payload: dict = Body(...)):
         await db.app_settings.insert_many(_restore_object_ids(payload["app_settings"]))
 
     return {"success": True}
+
+
+@router.post("/reset-careplan")
+async def reset_careplan():
+    """Wipes all Times, Task items (Feeding/Care/Light&Heat) and Schedule slots
+    (all age categories) and reloads a complete, editable, bilingual default
+    bearded dragon care plan. Dragons and their weight history are NEVER touched."""
+    await db.times.delete_many({})
+    await db.task_items.delete_many({})
+    await db.schedule_slots.delete_many({})
+    await db.completions.delete_many({})
+
+    time_id_map = {}
+    for t in TIMES:
+        doc = TimeSlot(time=t)
+        await db.times.insert_one(doc.to_mongo())
+        time_id_map[t] = doc.id
+
+    item_id_map = {}
+    for key, spec in ITEMS.items():
+        doc = TaskItem(
+            category=spec["category"],
+            name=spec["en"],
+            name_da=spec["da"],
+            name_en=spec["en"],
+            is_automatic=spec["auto"],
+        )
+        await db.task_items.insert_one(doc.to_mongo())
+        item_id_map[key] = doc.id
+
+    raw_slots = build_slots()
+    slot_docs = []
+    for s in raw_slots:
+        slot = ScheduleSlot(
+            age_category=s["age"],
+            day_of_week=s["day"],
+            time_id=time_id_map[s["time"]],
+            category=s["category"],
+            item_ids=[item_id_map[k] for k in s["items"]],
+            is_automatic=s["auto"],
+        )
+        slot_docs.append(slot.to_mongo())
+    if slot_docs:
+        await db.schedule_slots.insert_many(slot_docs)
+
+    return {
+        "success": True,
+        "times_count": len(time_id_map),
+        "items_count": len(item_id_map),
+        "schedule_slots_count": len(slot_docs),
+    }

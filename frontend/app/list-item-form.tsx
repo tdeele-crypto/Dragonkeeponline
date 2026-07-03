@@ -72,7 +72,12 @@ export default function ListItemFormScreen() {
           setSaving(false);
           return;
         }
-        const payload = { category, name: name.trim(), is_automatic: isLys ? isAutomatic : false };
+        const payload = {
+          category,
+          name: name.trim(),
+          is_automatic: isLys ? isAutomatic : false,
+          source_language: language,
+        };
         if (isEdit) {
           await api.put(`/task-items/${id}`, payload);
           showToast(t('listItemForm.itemUpdated'), 'success');

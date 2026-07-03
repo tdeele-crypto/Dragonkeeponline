@@ -13,7 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { AGE_CATEGORIES, DAYS_OF_WEEK } from '@/constants/data';
-import { getAgeLabel, getDayLabel, getDayLabelShort, formatTimeDisplay } from '@/i18n/translations';
+import { getAgeLabel, getDayLabel, getDayLabelShort, formatTimeDisplay, getItemDisplayName } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
@@ -66,7 +66,7 @@ export default function ScheduleScreen() {
   };
 
   const timesMap = useMemo(() => new Map(times.map((t) => [t.id, t.time])), [times]);
-  const itemsMap = useMemo(() => new Map(items.map((i) => [i.id, i.name])), [items]);
+  const itemsMap = useMemo(() => new Map(items.map((i) => [i.id, getItemDisplayName(i, language)])), [items, language]);
 
   const sortedSlots = useMemo(() => {
     return [...slots].sort((a, b) => {

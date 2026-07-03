@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Image,
+  Modal,
   ScrollView,
   StyleSheet,
   Text,
@@ -69,6 +70,10 @@ export default function AdminScreen() {
   const [localWeightUnit, setLocalWeightUnit] = useState<WeightUnit>('g');
   const [localTimeFormat, setLocalTimeFormat] = useState<TimeFormat>('12h');
   const [savingLang, setSavingLang] = useState(false);
+
+  const [careplanModalVisible, setCareplanModalVisible] = useState(false);
+  const [careplanConfirmInput, setCareplanConfirmInput] = useState('');
+  const [resettingCareplan, setResettingCareplan] = useState(false);
 
   useEffect(() => {
     setLocalImage(bannerImage);
@@ -158,6 +163,38 @@ export default function AdminScreen() {
       showToast(e.message || t('admin.langSaveError'), 'error');
     } finally {
       setSavingLang(false);
+    }
+  };
+
+  const careplanConfirmWord = t('admin.careplanConfirmWord');
+
+  const openCareplanModal = () => {
+    setCareplanConfirmInput('');
+    setCareplanModalVisible(true);
+  };
+
+  const handleConfirmResetCareplan = async () => {
+    if (careplanConfirmInput.trim().toUpperCase() !== careplanConfirmWord.toUpperCase()) {
+      showToast(t('admin.careplanConfirmMismatch'), 'error');
+      return;
+    }
+    setResettingCareplan(true);
+    try {
+      const res = await api.post('/admin/reset-careplan', {});
+      showToast(
+        t('admin.careplanResetSuccess', {
+          times: res.times_count,
+          items: res.items_count,
+          slots: res.schedule_slots_count,
+        }),
+        'success'
+      );
+      setCareplanModalVisible(false);
+      setCareplanConfirmInput('');
+    } catch (e: any) {
+      showToast(e.message || t('admin.careplanResetError'), 'error');
+    } finally {
+      setResettingCareplan(false);
     }
   };
 
@@ -559,7 +596,71 @@ export default function AdminScreen() {
             )}
           </TouchableOpacity>
         </View>
+
+        <View style={[styles.section, styles.dangerSection]}>
+          <Text style={styles.sectionTitle}>{t('admin.careplanSectionTitle')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('admin.careplanSectionSubtitle')}</Text>
+
+          <TouchableOpacity
+            style={styles.dangerBtn}
+            onPress={openCareplanModal}
+            testID="admin-careplan-reset-button"
+          >
+            <Ionicons name="refresh-outline" size={18} color={COLORS.white} />
+            <Text style={styles.dangerBtnText}>{t('admin.careplanResetButton')}</Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
+
+      <Modal
+        visible={careplanModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setCareplanModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalCard} testID="admin-careplan-confirm-modal">
+            <Ionicons name="warning" size={32} color={COLORS.danger} style={{ alignSelf: 'center' }} />
+            <Text style={styles.modalTitle}>{t('admin.careplanConfirmTitle')}</Text>
+            <Text style={styles.modalMessage}>{t('admin.careplanConfirmMessage')}</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={careplanConfirmInput}
+              onChangeText={setCareplanConfirmInput}
+              placeholder={t('admin.careplanConfirmPlaceholder')}
+              placeholderTextColor={COLORS.textMuted}
+              autoCapitalize="characters"
+              testID="admin-careplan-confirm-input"
+            />
+            <View style={styles.modalActions}>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalCancelBtn]}
+                onPress={() => setCareplanModalVisible(false)}
+                testID="admin-careplan-confirm-cancel"
+              >
+                <Text style={styles.modalCancelBtnText}>{t('common.cancel')}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.modalBtn,
+                  styles.modalConfirmBtn,
+                  careplanConfirmInput.trim().toUpperCase() !== careplanConfirmWord.toUpperCase() &&
+                    styles.modalConfirmBtnDisabled,
+                ]}
+                onPress={handleConfirmResetCareplan}
+                disabled={resettingCareplan}
+                testID="admin-careplan-confirm-button"
+              >
+                {resettingCareplan ? (
+                  <ActivityIndicator color={COLORS.white} />
+                ) : (
+                  <Text style={styles.modalConfirmBtnText}>{t('admin.careplanResetButton')}</Text>
+                )}
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -764,6 +865,94 @@ const styles = StyleSheet.create({
   },
   optionChipTextActive: {
     color: COLORS.white,
+  },
+  dangerSection: {
+    borderWidth: 1,
+    borderColor: COLORS.dangerLight,
+  },
+  dangerBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    minHeight: 48,
+    borderRadius: 14,
+    backgroundColor: COLORS.danger,
+  },
+  dangerBtnText: {
+    color: COLORS.white,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 24,
+  },
+  modalCard: {
+    width: '100%',
+    maxWidth: 420,
+    backgroundColor: COLORS.white,
+    borderRadius: 20,
+    padding: 20,
+    gap: 12,
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: '900',
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+  },
+  modalMessage: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    lineHeight: 19,
+    textAlign: 'center',
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 12,
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    fontSize: 15,
+    color: COLORS.textPrimary,
+    textAlign: 'center',
+    fontWeight: '700',
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  modalBtn: {
+    flex: 1,
+    minHeight: 48,
+    borderRadius: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  modalCancelBtn: {
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+  },
+  modalCancelBtnText: {
+    color: COLORS.textSecondary,
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  modalConfirmBtn: {
+    backgroundColor: COLORS.danger,
+  },
+  modalConfirmBtnDisabled: {
+    opacity: 0.4,
+  },
+  modalConfirmBtnText: {
+    color: COLORS.white,
+    fontSize: 14,
+    fontWeight: '800',
   },
   label: {
     fontSize: 13,

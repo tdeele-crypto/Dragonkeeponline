@@ -12,7 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
 import { AGE_CATEGORIES, DAYS_OF_WEEK } from '@/constants/data';
-import { getAgeLabel, getDayLabel, getTaskCategories, getCategoryLabel, formatTimeDisplay } from '@/i18n/translations';
+import { getAgeLabel, getDayLabel, getTaskCategories, getCategoryLabel, formatTimeDisplay, getItemDisplayName } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
@@ -206,7 +206,7 @@ export default function ScheduleSlotFormScreen() {
         {category && (
           <PickerField
             label={t('slotForm.itemsLabel')}
-            value={itemIds.map((id) => items.find((i) => i.id === id)?.name).filter(Boolean).join(', ')}
+            value={itemIds.map((id) => items.find((i) => i.id === id)).filter(Boolean).map((i) => getItemDisplayName(i as any, language)).join(', ')}
             placeholder={categoryItems.length === 0 ? t('slotForm.itemsAddUnderLists') : t('slotForm.itemsPlaceholder')}
             onPress={() => categoryItems.length > 0 && setItemsSheetVisible(true)}
             testID="schedule-slot-form-items-picker"
@@ -295,7 +295,7 @@ export default function ScheduleSlotFormScreen() {
         visible={itemsSheetVisible}
         title={t('slotForm.selectItemsTitle')}
         multi
-        options={categoryItems.map((i) => ({ value: i.id, label: i.name }))}
+        options={categoryItems.map((i) => ({ value: i.id, label: getItemDisplayName(i, language) }))}
         selected={itemIds}
         onSelect={setItemIds}
         onClose={() => setItemsSheetVisible(false)}

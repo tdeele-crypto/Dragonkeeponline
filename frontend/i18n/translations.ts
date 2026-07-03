@@ -224,6 +224,19 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'admin.timeFormat24h': '24-timer',
     'admin.timeFormat12h': 'AM/PM',
 
+    'admin.careplanSectionTitle': 'Standard plejeplan',
+    'admin.careplanSectionSubtitle':
+      'Nulstil alle Tider, Fodring/Pleje/Lys-emner og Ugeplaner (alle aldre) og indlæs en komplet, tosproget standard-plejeplan. Dine agamer og deres vægthistorik påvirkes IKKE. Alt forbliver frit redigerbart bagefter.',
+    'admin.careplanResetButton': 'Nulstil & indlæs plejeplan',
+    'admin.careplanConfirmTitle': 'Er du helt sikker?',
+    'admin.careplanConfirmMessage':
+      'Dette sletter permanent ALLE nuværende Tider, Fodring/Pleje/Lys-emner og Ugeplaner for alle alderskategorier, og erstatter dem med en standard-plejeplan. Kan ikke fortrydes. Agamer og vægthistorik berøres ikke.',
+    'admin.careplanConfirmWord': 'NULSTIL',
+    'admin.careplanConfirmPlaceholder': 'Skriv NULSTIL',
+    'admin.careplanConfirmMismatch': 'Du skal skrive "NULSTIL" for at bekræfte',
+    'admin.careplanResetSuccess': 'Plejeplan indlæst: {{times}} tider, {{items}} emner, {{slots}} ugeplan-opgaver',
+    'admin.careplanResetError': 'Kunne ikke nulstille plejeplan',
+
     'copyToDays.title': 'Kopier til dage & perioder',
     'copyToDays.subtitle':
       'Opgaven oprettes automatisk for alle valgte dage og perioder. Den nuværende dag og periode er altid inkluderet.',
@@ -456,6 +469,19 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'admin.timeFormat24h': '24-hour',
     'admin.timeFormat12h': 'AM/PM',
 
+    'admin.careplanSectionTitle': 'Default care plan',
+    'admin.careplanSectionSubtitle':
+      'Reset all Times, Feeding/Care/Light&Heat items, and Schedules (all ages) and load a complete, bilingual default care plan. Your dragons and their weight history are NOT affected. Everything remains freely editable afterwards.',
+    'admin.careplanResetButton': 'Reset & load care plan',
+    'admin.careplanConfirmTitle': 'Are you absolutely sure?',
+    'admin.careplanConfirmMessage':
+      'This permanently deletes ALL current Times, Feeding/Care/Light&Heat items, and Schedules for every age category, and replaces them with a default care plan. This cannot be undone. Dragons and weight history are not affected.',
+    'admin.careplanConfirmWord': 'RESET',
+    'admin.careplanConfirmPlaceholder': 'Type RESET',
+    'admin.careplanConfirmMismatch': 'You must type "RESET" to confirm',
+    'admin.careplanResetSuccess': 'Care plan loaded: {{times}} times, {{items}} items, {{slots}} schedule tasks',
+    'admin.careplanResetError': 'Could not reset care plan',
+
     'copyToDays.title': 'Copy to days & periods',
     'copyToDays.subtitle':
       'The task is automatically created for all selected days and periods. The current day and period are always included.',
@@ -678,4 +704,18 @@ export function formatDateLabel(d: Date, lang: Language): string {
 
 export function formatDateShort(d: Date): string {
   return `${d.getDate()}/${d.getMonth() + 1}`;
+}
+
+// ---------------------------------------------------------------------------
+// Task item display name - prefers the bilingual name_da/name_en fields
+// (populated by the backend on create/update, incl. AI-translated custom
+// items and the seeded default care plan). Falls back to the raw `name`
+// field for older items that predate this feature.
+// ---------------------------------------------------------------------------
+export function getItemDisplayName(
+  item: { name: string; name_da?: string | null; name_en?: string | null },
+  lang: Language
+): string {
+  if (lang === 'da') return item.name_da || item.name;
+  return item.name_en || item.name;
 }

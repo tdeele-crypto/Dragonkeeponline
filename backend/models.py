@@ -65,6 +65,8 @@ class DragonUpdate(BaseModel):
 class TaskItem(BaseDocument):
     category: TaskCategory
     name: str
+    name_da: Optional[str] = None
+    name_en: Optional[str] = None
     is_automatic: bool = False
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
@@ -73,6 +75,7 @@ class TaskItemCreate(BaseModel):
     category: TaskCategory
     name: str
     is_automatic: bool = False
+    source_language: Optional[AppLanguage] = None
 
 
 class TimeSlot(BaseDocument):

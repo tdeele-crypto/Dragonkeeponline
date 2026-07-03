@@ -13,7 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
 import { COLORS } from '@/constants/colors';
-import { formatTimeDisplay } from '@/i18n/translations';
+import { formatTimeDisplay, getItemDisplayName } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
@@ -36,7 +36,7 @@ export default function ListsScreen() {
   const router = useRouter();
   const showToast = useToast();
   const showConfirm = useConfirm();
-  const { appBgColor, pageTitleColor, timeFormat, t } = useAdminSettings();
+  const { appBgColor, pageTitleColor, language, timeFormat, t } = useAdminSettings();
   const [activeTab, setActiveTab] = useState<ListKey>('tider');
 
   const LIST_TABS: { key: ListKey; label: string; icon: string }[] = [
@@ -138,7 +138,7 @@ export default function ListsScreen() {
 
   const handleDeleteItem = (item: TaskItem) => {
     showConfirm({
-      title: t('tasks.deleteItemTitle', { name: item.name }),
+      title: t('tasks.deleteItemTitle', { name: getItemDisplayName(item, language) }),
       message: t('tasks.deleteItemMessage'),
       confirmLabel: t('common.delete'),
       cancelLabel: t('common.cancel'),
@@ -243,7 +243,7 @@ export default function ListsScreen() {
           ) : (
             filteredItems.map((item) => (
               <View key={item.id} style={styles.row} testID={`item-row-${item.id}`}>
-                <Text style={styles.rowText}>{item.name}</Text>
+                <Text style={styles.rowText}>{getItemDisplayName(item, language)}</Text>
                 {item.category === 'lys' && (
                   <View style={styles.autoToggleGroup} testID={`item-automatic-group-${item.id}`}>
                     <Text style={styles.autoToggleLabel}>{t('tasks.automatic')}</Text>
@@ -259,7 +259,12 @@ export default function ListsScreen() {
                   onPress={() =>
                     router.push({
                       pathname: '/list-item-form',
-                      params: { category: item.category, id: item.id, currentName: item.name, currentAutomatic: String(item.is_automatic) },
+                      params: {
+                        category: item.category,
+                        id: item.id,
+                        currentName: getItemDisplayName(item, language),
+                        currentAutomatic: String(item.is_automatic),
+                      },
                     })
                   }
                   testID={`item-edit-button-${item.id}`}

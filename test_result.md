@@ -166,16 +166,15 @@
 ## metadata:
   created_by: "main_agent"
   version: "1.0"
-  test_sequence: 1
+  test_sequence: 2
   run_ui: false
 
 ## test_plan:
   current_focus:
-    - "Language/Weight/Time settings context + Admin UI"
-    - "Full UI translation (English/Danish) across all screens"
-    - "Weight unit (g/oz) display + input conversion"
-    - "Time format (12h/24h) applied wherever times are shown"
-    - "AppSettings model - language/weight_unit/time_format fields"
+    - "Reset & load default care plan (backend)"
+    - "AI auto-translation of custom task item names (Gemini 3 Flash)"
+    - "Reset & load care plan Admin UI (double confirm)"
+    - "Task item bilingual display across all screens"
   stuck_tasks: []
   test_all: true
   test_priority: "high_first"
@@ -183,3 +182,68 @@
 ## agent_communication:
     - agent: "main"
       message: "Implemented full localization feature: (1) Backend AppSettings model extended with language/weight_unit/time_format (defaults en/g/12h). (2) New Admin 'Language & units' section with 3 toggle groups + save button. (3) All static UI text across every screen (Overview, Dragons, Tasks, Schedules, Admin, and all forms/modals) now uses a t() translation function with full Danish+English dictionaries. (4) Built-in enums (days, age categories, gender, task categories) translate dynamically. (5) Weight displays convert g<->oz. (6) Time displays convert 24h<->12h(am/pm) everywhere. Per explicit user decision, custom database item names (task items entered by user, e.g. feed names) are NOT translated in this iteration - this is intentional, not a bug, user wants a separate 'care plan' translation feature later. Please test: (a) default settings are English/g/12h on fresh state, (b) switching to Danish and saving updates ALL screens' text immediately, (c) switching weight unit to oz converts display and new entries correctly store as grams, (d) switching time format to 24h updates all time displays (Tasks>Times, Schedules, Overview, forms), (e) general regression on existing features (dragons CRUD, tasks CRUD, schedule CRUD, weight CRUD, admin banner/appearance/export/import) since many files were touched. IMPORTANT: no auth in this app, no credentials needed."
+
+
+## NEW FEATURE (this session): Default Care Plan Reset + AI Auto-Translation of Custom Items
+
+### backend:
+  - task: "Reset & load default care plan (backend)"
+    implemented: true
+    working: "NA"
+    file: "backend/routes/admin.py, backend/services/careplan_seed.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "New POST /api/admin/reset-careplan endpoint: deletes ALL docs in times, task_items, schedule_slots, completions collections (dragons and weight_entries are NEVER touched), then seeds 7 default times, 12 bilingual (da/en) task items (feeding/care/light&heat, based on researched bearded dragon husbandry guidelines), and a full weekly schedule for all 4 age categories (2-4, 4-7, 7-12, 12+ months) with age-appropriate insect-feeding frequency (juveniles daily 2x/day, sub-adults every-other-day, adults 2x/week) + daily veg/care/light tasks + weekly Sunday cleaning. Returns {times_count, items_count, schedule_slots_count}. Verified manually: 7 times, 12 items, 163 schedule_slots created; everything remains normal editable CRUD data afterwards (no special 'locked' flag)."
+  - task: "AI auto-translation of custom task item names (Gemini 3 Flash)"
+    implemented: true
+    working: "NA"
+    file: "backend/services/translator.py, backend/routes/task_items.py, backend/models.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "TaskItem model now has optional name_da/name_en fields. On POST /api/task-items (and PUT when name actually changed / translation missing), backend calls Gemini 3 Flash via Emergent LLM key (EMERGENT_LLM_KEY added to backend/.env) to translate the entered name into the other language, storing both. Never raises - falls back to using the original text for both languages if the LLM call fails, so item save never breaks. PUT is smart: skips re-translation if name is unchanged (e.g. just toggling the 'automatic' switch) to avoid wasteful LLM calls / translation drift. Manually verified: POST with name='Cikader', source_language='da' correctly returned name_en='Cicadas'. GET /api/daily-overview now reads app_settings.language and returns item_names in the correct language (verified da and en)."
+
+### frontend:
+  - task: "Reset & load care plan Admin UI (double confirm)"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/(tabs)/admin.tsx, frontend/i18n/translations.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "New 'Default care plan' section added at the very bottom of Admin (after Language & units), with a red destructive button (admin-careplan-reset-button) that opens a custom Modal (admin-careplan-confirm-modal) requiring the user to TYPE the word 'NULSTIL' (Danish UI) or 'RESET' (English UI) into a text input (admin-careplan-confirm-input) before the confirm button (admin-careplan-confirm-button) becomes active. On confirm, calls POST /api/admin/reset-careplan and shows a toast with the counts. Cancel button (admin-careplan-confirm-cancel) closes without action."
+  - task: "Task item bilingual display across all screens"
+    implemented: true
+    working: "NA"
+    file: "frontend/i18n/translations.ts (getItemDisplayName), frontend/app/(tabs)/lists.tsx, schedule.tsx, schedule-slot-form.tsx, frontend/app/list-item-form.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "New getItemDisplayName(item, lang) helper picks item.name_da/name_en based on current language, falling back to item.name for legacy items without translations. Wired into: Tasks item rows, Schedules slot item names, Schedule-slot-form item picker/selected value. list-item-form.tsx now sends source_language (current app language) on create/update so the backend can auto-translate, and prefills the edit field with the language-appropriate name."
+
+## test_plan (updated):
+  current_focus:
+    - "Reset & load default care plan (backend)"
+    - "AI auto-translation of custom task item names (Gemini 3 Flash)"
+    - "Reset & load care plan Admin UI (double confirm)"
+    - "Task item bilingual display across all screens"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+## agent_communication (new):
+    - agent: "main"
+      message: "Implemented Admin > 'Default care plan' reset feature per user request: (1) New destructive button + type-to-confirm modal (word must match NULSTIL/RESET depending on current language) that wipes Times/Task-items/Schedule-slots/Completions for ALL age categories (dragons and weight history are untouched) and reloads a complete bilingual (da/en) default care plan I researched (feeding frequency by age, UVB/heat schedule, care tasks) - everything remains fully editable afterwards via normal CRUD. (2) NEW: custom task items (feeding/care/light) the user creates or edits from now on are AUTOMATICALLY translated between Danish/English using Gemini 3 Flash via the Emergent LLM key - manually verified 'Cikader' (da) -> 'Cicadas' (en). Please test: (a) reset button requires typing exact confirm word before it becomes clickable, wrong word shows error toast, (b) after reset, times/items/schedules show correctly translated per current language toggle and are still fully editable (add/edit/delete), (c) creating a NEW custom feeding/care/light item auto-translates within a few seconds and shows correctly when switching language, (d) dragons and weight history survive the reset untouched, (e) daily overview reflects language-correct item names. IMPORTANT: LLM translation calls take a couple seconds - not mocked, real Gemini 3 Flash calls via EMERGENT_LLM_KEY."

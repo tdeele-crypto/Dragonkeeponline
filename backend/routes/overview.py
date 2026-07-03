@@ -20,8 +20,11 @@ async def get_daily_overview(date: str = Query(...)):
     dragons = await db.dragons.find().sort("created_at", 1).to_list(1000)
     times = await db.times.find().to_list(1000)
     times_map = {str(t["_id"]): t["time"] for t in times}
+    settings_doc = await db.app_settings.find_one({"key": "app_settings_singleton"})
+    language = (settings_doc or {}).get("language", "en")
+    name_field = "name_da" if language == "da" else "name_en"
     task_items = await db.task_items.find().to_list(1000)
-    items_map = {str(i["_id"]): i["name"] for i in task_items}
+    items_map = {str(i["_id"]): (i.get(name_field) or i.get("name")) for i in task_items}
     completions = await db.completions.find({"date": date}).to_list(1000)
     completion_map = {(c["dragon_id"], c["schedule_slot_id"]): c["completed"] for c in completions}
 
