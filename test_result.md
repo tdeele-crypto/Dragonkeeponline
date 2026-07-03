@@ -247,3 +247,34 @@
 ## agent_communication (new):
     - agent: "main"
       message: "Implemented Admin > 'Default care plan' reset feature per user request: (1) New destructive button + type-to-confirm modal (word must match NULSTIL/RESET depending on current language) that wipes Times/Task-items/Schedule-slots/Completions for ALL age categories (dragons and weight history are untouched) and reloads a complete bilingual (da/en) default care plan I researched (feeding frequency by age, UVB/heat schedule, care tasks) - everything remains fully editable afterwards via normal CRUD. (2) NEW: custom task items (feeding/care/light) the user creates or edits from now on are AUTOMATICALLY translated between Danish/English using Gemini 3 Flash via the Emergent LLM key - manually verified 'Cikader' (da) -> 'Cicadas' (en). Please test: (a) reset button requires typing exact confirm word before it becomes clickable, wrong word shows error toast, (b) after reset, times/items/schedules show correctly translated per current language toggle and are still fully editable (add/edit/delete), (c) creating a NEW custom feeding/care/light item auto-translates within a few seconds and shows correctly when switching language, (d) dragons and weight history survive the reset untouched, (e) daily overview reflects language-correct item names. IMPORTANT: LLM translation calls take a couple seconds - not mocked, real Gemini 3 Flash calls via EMERGENT_LLM_KEY."
+
+
+## FOLLOW-UP (this session): First-run auto-seed + "capture edited plan as new default" workflow
+
+### backend:
+  - task: "Auto-seed default care plan on first run / fresh install"
+    implemented: true
+    working: true
+    file: "backend/server.py, backend/services/careplan_seed.py (apply_default_careplan, seed_if_empty)"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "Refactored the DB-insert logic out of the /admin/reset-careplan endpoint into a shared `apply_default_careplan(db)` function in services/careplan_seed.py. Added a FastAPI startup event in server.py that calls `seed_if_empty(db)` - checks if times/task_items/schedule_slots are ALL empty and, if so, auto-loads the default plan (strict no-op otherwise, dragons/weights never touched). Manually verified: (1) normal restart with existing data -> no-op, all data preserved (7 times/12 items/6 dragons unchanged); (2) simulated fresh install (wiped times/items/slots/completions only) -> restart logs 'First-run auto-seed: loaded default care plan {times_count:7, items_count:12, schedule_slots_count:163}', dragons remained untouched (still 6). No new UI surface - internal behavior only, did not re-invoke testing_agent for this infra-only change since it was directly verified via server logs + API checks."
+  - task: "Capture user-edited plan as new permanent default (scripts/capture_default_careplan.py)"
+    implemented: true
+    working: true
+    file: "backend/scripts/capture_default_careplan.py"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "Per user request: no 'Save as default' button in the UI. Instead, user freely edits Times/Feeding/Care/Light&Heat/Schedules in the app as normal, then asks main agent (in chat) to lock it in. Built scripts/capture_default_careplan.py which reads the LIVE db.times/task_items/schedule_slots, and REWRITES backend/services/careplan_seed.py with an explicit (non-procedural) snapshot of exactly that state (bilingual item names preserved, all age/day combinations preserved literally). This becomes the new default for both the 'Reset & load care plan' button AND first-run auto-seed. Dry-run tested end-to-end: captured current (still-original) plan, verified generated file re-imports with matching counts (7/12/163), then restored the original hand-written seed file since the user has not started customizing yet. NEXT SESSION: when user says the plan is ready, run `cd /app/backend && python3 scripts/capture_default_careplan.py` then restart backend."
+
+## agent_communication (new):
+    - agent: "main"
+      message: "Built the infrastructure the user asked for: (1) App now auto-seeds the default care plan on a completely fresh/empty database (first install), not just on manual Admin reset. (2) Added scripts/capture_default_careplan.py - when the user finishes customizing their Times/Feeding/Care/Light&Heat/Schedules to their liking in the app and tells me (in chat) it's ready, I will run this script to capture their EXACT edited state and permanently overwrite the built-in default plan file, so it becomes what loads on reset AND on fresh installs going forward. No new 'Save as default' UI button was added, per explicit user preference (they will just ask in chat when ready). This session's changes are backend-only infra with no new UI - verified via direct server logs/API checks (restart-with-data preserved; simulated-fresh-install triggered correct auto-seed with dragons untouched); did not re-invoke the full testing_agent since there's no new UI surface to click through and previous care-plan-reset test coverage already validates the underlying seeding function this reuses."

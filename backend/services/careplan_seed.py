@@ -80,3 +80,71 @@ def build_slots() -> List[Dict[str, Any]]:
             slots.append({"age": age, "day": day, "time": "18:00", "category": "pleje", "items": evening_care_items, "auto": False})
 
     return slots
+
+
+async def apply_default_careplan(db) -> Dict[str, int]:
+    """Inserts TIMES/ITEMS/build_slots() into the given (empty) collections.
+    Does NOT wipe anything first - caller is responsible for that if needed.
+    Used by both the Admin > 'Reset & load care plan' endpoint and the
+    first-run auto-seed on a fresh/empty database."""
+    # Local imports to avoid a circular import between models.py and this module.
+    from models import TimeSlot, TaskItem, ScheduleSlot
+
+    time_id_map: Dict[str, str] = {}
+    for t in TIMES:
+        doc = TimeSlot(time=t)
+        await db.times.insert_one(doc.to_mongo())
+        time_id_map[t] = doc.id
+
+    item_id_map: Dict[str, str] = {}
+    for key, spec in ITEMS.items():
+        doc = TaskItem(
+            category=spec["category"],
+            name=spec["en"],
+            name_da=spec["da"],
+            name_en=spec["en"],
+            is_automatic=spec["auto"],
+        )
+        await db.task_items.insert_one(doc.to_mongo())
+        item_id_map[key] = doc.id
+
+    raw_slots = build_slots()
+    slot_docs = []
+    for s in raw_slots:
+        slot = ScheduleSlot(
+            age_category=s["age"],
+            day_of_week=s["day"],
+            time_id=time_id_map[s["time"]],
+            category=s["category"],
+            item_ids=[item_id_map[k] for k in s["items"]],
+            is_automatic=s["auto"],
+        )
+        slot_docs.append(slot.to_mongo())
+    if slot_docs:
+        await db.schedule_slots.insert_many(slot_docs)
+
+    return {
+        "times_count": len(time_id_map),
+        "items_count": len(item_id_map),
+        "schedule_slots_count": len(slot_docs),
+    }
+
+
+async def seed_if_empty(db) -> None:
+    """Called once at backend startup. If Times/Task-items/Schedule-slots are
+    ALL empty (fresh install / fresh database), auto-loads the default care
+    plan so new installs start with a ready-to-use plan instead of an empty
+    app. Never touches dragons/weight_entries, and never overwrites existing
+    data (only runs when everything is empty)."""
+    import logging
+    logger = logging.getLogger(__name__)
+    has_times = await db.times.find_one({})
+    has_items = await db.task_items.find_one({})
+    has_slots = await db.schedule_slots.find_one({})
+    if has_times or has_items or has_slots:
+        return
+    try:
+        counts = await apply_default_careplan(db)
+        logger.info(f"First-run auto-seed: loaded default care plan {counts}")
+    except Exception as e:
+        logger.warning(f"First-run auto-seed failed (app still usable, Admin > Reset can retry): {e}")

@@ -3,7 +3,7 @@ from datetime import datetime, UTC
 from bson import ObjectId
 from database import db
 from models import AppSettings, AppSettingsUpdate, TimeSlot, TaskItem, ScheduleSlot
-from services.careplan_seed import TIMES, ITEMS, build_slots
+from services.careplan_seed import apply_default_careplan
 
 router = APIRouter(prefix="/admin", tags=["admin"])
 
@@ -123,42 +123,11 @@ async def reset_careplan():
     await db.schedule_slots.delete_many({})
     await db.completions.delete_many({})
 
-    time_id_map = {}
-    for t in TIMES:
-        doc = TimeSlot(time=t)
-        await db.times.insert_one(doc.to_mongo())
-        time_id_map[t] = doc.id
-
-    item_id_map = {}
-    for key, spec in ITEMS.items():
-        doc = TaskItem(
-            category=spec["category"],
-            name=spec["en"],
-            name_da=spec["da"],
-            name_en=spec["en"],
-            is_automatic=spec["auto"],
-        )
-        await db.task_items.insert_one(doc.to_mongo())
-        item_id_map[key] = doc.id
-
-    raw_slots = build_slots()
-    slot_docs = []
-    for s in raw_slots:
-        slot = ScheduleSlot(
-            age_category=s["age"],
-            day_of_week=s["day"],
-            time_id=time_id_map[s["time"]],
-            category=s["category"],
-            item_ids=[item_id_map[k] for k in s["items"]],
-            is_automatic=s["auto"],
-        )
-        slot_docs.append(slot.to_mongo())
-    if slot_docs:
-        await db.schedule_slots.insert_many(slot_docs)
+    counts = await apply_default_careplan(db)
 
     return {
         "success": True,
-        "times_count": len(time_id_map),
-        "items_count": len(item_id_map),
-        "schedule_slots_count": len(slot_docs),
+        "times_count": counts["times_count"],
+        "items_count": counts["items_count"],
+        "schedule_slots_count": counts["schedule_slots_count"],
     }
