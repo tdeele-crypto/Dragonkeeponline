@@ -1,0 +1,37 @@
+{
+  "summary": "Tested the Overview horizontal dragon-column scroll-overshoot bug fix (app/(tabs)/index.tsx). Verified code: columnWidth is now computed responsively via useWindowDimensions() (Math.min(screenWidth-40, 360)) instead of a static Dimensions.get() call, and the ScrollView uses snapToInterval={columnWidth+16} + snapToAlignment='start' + disableIntervalMomentum (undefined when only 1 dragon) instead of pagingEnabled. Created 2 temporary TEST_ dragons (TEST_Bragi, TEST_Freya) alongside existing 'Sif' to test 3-column scenario at narrow (390x844) and wide (1024x768) viewports. Confirmed columnWidth correctly resolves to 350px at 390px screen width and clamps at 360px (max) at 1024px screen width - matches the Math.min(screenWidth-40,360) formula exactly (verified via bounding_box measurements). Confirmed 1-dragon-only scenario renders without crash at both narrow and wide viewports (snapToInterval correctly becomes undefined, no error). Verified no regressions: task-checkbox toggle, brumation/active activity-state toggle (with optimistic UI + toast + persisted correctly on reload), and screen reload/refresh all work correctly. IMPORTANT CAVEAT: could not directly verify the actual native swipe-snap physics (the core of this bug fix) in this web preview, because react-native-web does NOT implement the `snapToInterval`/`snapToAlignment` ScrollView props at all (confirmed via computed styles: scroll-snap-type resolves to 'none' and scroll-snap-align to 'none' on the DOM node, and confirmed via web search that this is a known, longstanding react-native-web limitation, issue #1250/#1592). This means on web the ScrollView just does plain free-scroll with no snap-to-column behavior currently, on both narrow and wide viewports equally (not a regression introduced by this fix - pagingEnabled has the same web limitation). The column-width calculation fix itself (the actual root cause of the wide-screen overshoot) is verified correct and responsive. The snapToInterval swipe-behavior itself can only be meaningfully verified on a native iOS/Android build or Expo Go, not in this web preview. All temporary TEST_ dragons were deleted after testing; DB restored to exactly one dragon 'Sif' (id 6a4635bd66e797e6db9b8f13, activity_state: active) as required.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": [
+      {
+        "component": "app/(tabs)/index.tsx - overview-columns-scroll ScrollView",
+        "issue": "react-native-web does not implement snapToInterval/snapToAlignment/disableIntervalMomentum props (computed style shows scroll-snap-type: none, scroll-snap-align: none on the actual DOM). This is a pre-existing react-native-web library limitation (not something introduced by this fix - the old pagingEnabled had the identical limitation on web), so the swipe-snap-per-column behavior described in the fix cannot be interactively verified in this web preview on either narrow or wide viewports. The column-width computation itself (the actual root cause fix) was verified correct and responsive via useWindowDimensions."
+      }
+    ]
+  },
+  "test_report_links": [],
+  "action_items": [
+    "Root-cause fix (useWindowDimensions + Math.min(screenWidth-40,360) column width calc) verified correct and responsive - column width measured exactly 350px at 390px viewport and exactly 360px (capped) at 1024px viewport, matching the intended formula.",
+    "1-dragon edge case (snapToInterval=undefined) verified: renders without crash/error at both narrow and wide viewports.",
+    "Regression checks passed: task-completion checkbox toggle, activity-state (active/brumation) toggle with toast + persistence, and screen reload/pull-refresh all functioning correctly with no errors.",
+    "RECOMMENDATION: Since react-native-web has no support for snapToInterval (confirmed via computed CSS and public GitHub issues), the actual swipe-snap-per-column UX described in the bug fix should be verified on a real device or Expo Go build (iOS/Android), where snapToInterval IS natively supported - this cannot be done in the web preview environment. This is an inherent test-environment limitation, not a code defect."
+  ],
+  "critical_code_review_comments": [
+    "app/(tabs)/index.tsx: Good fix - switching from Dimensions.get('window').width (captured once, stale on rotation/resize) to useWindowDimensions() hook makes columnWidth reactive to viewport changes, which is necessary for the tablet/wide-screen fix to actually work.",
+    "app/(tabs)/index.tsx: snapToInterval is correctly guarded with `overview.dragons.length > 1 ? columnWidth + COLUMNS_GAP : undefined` avoiding any snap-interval-of-zero or unnecessary-snap edge cases for the single-dragon case.",
+    "DragonColumn.tsx receives `width` as a prop and applies it directly via inline style - clean, no duplicated width logic between parent and child."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A - no backend changes for this fix, dragon CRUD used only for test setup/cleanup and confirmed working (100%)", "frontend": "100% of testable-in-web-preview aspects passed (column width responsiveness, 1-dragon edge case, no-crash on both viewport sizes, task/activity toggle regressions); the core native swipe-snap interaction itself is untestable on web due to react-native-web's lack of snapToInterval support (library limitation, not a bug)"},
+  "seed_data_creation": "Created 2 temporary dragons (TEST_Bragi, TEST_Freya) via POST /api/dragons for multi-column testing, both deleted via DELETE /api/dragons/{id} at the end. Confirmed final GET /api/dragons returns exactly 1 dragon: Sif (id 6a4635bd66e797e6db9b8f13, activity_state restored to 'active').",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The Overview column-width root-cause fix (useWindowDimensions + capped Math.min formula) is correctly implemented and verified responsive across narrow/wide viewports. The snapToInterval swipe-snap mechanic itself cannot be verified in this web-preview environment because react-native-web does not support the snapToInterval/snapToAlignment ScrollView props (confirmed via computed CSS scroll-snap-type: none and public react-native-web GitHub issues #1250/#1592) - this was already the case before this fix too (pagingEnabled has the same web gap), so it is not a regression, just an environment limitation. If pixel-perfect swipe-snap verification is needed, it must be done on a native Expo Go / device build.",
+  "rca_of_issue": "N/A - no new bugs found. The reported user bug (overshoot on wide screens) is addressed at the code level by replacing pagingEnabled (snaps by full viewport width) with snapToInterval=columnWidth+gap (snaps by exactly one column regardless of viewport width) plus switching to useWindowDimensions for responsive recalculation - this logic was verified correct via direct measurement of the computed columnWidth at multiple viewport sizes, matching the intended Math.min(screenWidth-40,360) formula exactly."
+}

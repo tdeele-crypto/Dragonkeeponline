@@ -1,12 +1,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Dimensions,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
+  useWindowDimensions,
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -22,12 +22,15 @@ import DragonColumn from '@/components/DragonColumn';
 import PageBanner from '@/components/PageBanner';
 import type { DailyOverview } from '@/types';
 
-const SCREEN_WIDTH = Dimensions.get('window').width;
-const COLUMN_WIDTH = Math.min(SCREEN_WIDTH - 40, 360);
+const COLUMNS_HORIZONTAL_PADDING = 20;
+const COLUMNS_GAP = 16;
+const MAX_COLUMN_WIDTH = 360;
 
 export default function DagsoversigtScreen() {
   const router = useRouter();
   const showToast = useToast();
+  const { width: screenWidth } = useWindowDimensions();
+  const columnWidth = Math.min(screenWidth - COLUMNS_HORIZONTAL_PADDING * 2, MAX_COLUMN_WIDTH);
   const { appBgColor, pageTitleColor, language, t } = useAdminSettings();
   const [date, setDate] = useState(new Date());
   const [overview, setOverview] = useState<DailyOverview | null>(null);
@@ -152,8 +155,10 @@ export default function DagsoversigtScreen() {
       ) : (
         <ScrollView
           horizontal
-          pagingEnabled={overview.dragons.length > 1}
           decelerationRate="fast"
+          snapToInterval={overview.dragons.length > 1 ? columnWidth + COLUMNS_GAP : undefined}
+          snapToAlignment="start"
+          disableIntervalMomentum
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.columnsWrapper}
           testID="overview-columns-scroll"
@@ -162,7 +167,7 @@ export default function DagsoversigtScreen() {
             <DragonColumn
               key={dragon.dragon_id}
               dragon={dragon}
-              width={COLUMN_WIDTH}
+              width={columnWidth}
               onToggleTask={(slotId) => toggleTask(dragon.dragon_id, slotId)}
               onActivityChanged={() => fetchOverview(date, false)}
             />
