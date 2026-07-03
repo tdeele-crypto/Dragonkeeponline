@@ -104,20 +104,24 @@ export default function DragonsScreen() {
               <View key={dragon.id} style={styles.card} testID={`dragon-card-${dragon.id}`}>
                 <DragonAvatar photoBase64={dragon.photo_base64} size={60} />
                 <View style={styles.cardInfo}>
-                  <Text style={styles.cardName} testID={`dragon-card-name-${dragon.id}`}>{dragon.name}</Text>
+                  <View style={styles.cardNameRow}>
+                    <Text style={styles.cardName} numberOfLines={1} testID={`dragon-card-name-${dragon.id}`}>
+                      {dragon.name}
+                    </Text>
+                    <TouchableOpacity
+                      style={styles.editIconBtn}
+                      onPress={() => router.push({ pathname: '/dragon-form', params: { id: dragon.id } })}
+                      testID={`dragon-edit-button-${dragon.id}`}
+                    >
+                      <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+                  </View>
                   <Text style={styles.cardMeta}>{getGenderLabel(dragon.gender, language)} · {dragon.color} · {dragon.morph}</Text>
                   <View style={styles.ageBadge}>
                     <Text style={styles.ageBadgeText}>{ageLabel}</Text>
                   </View>
                 </View>
                 <View style={styles.cardActions}>
-                  <TouchableOpacity
-                    style={styles.iconBtn}
-                    onPress={() => router.push({ pathname: '/dragon-form', params: { id: dragon.id } })}
-                    testID={`dragon-edit-button-${dragon.id}`}
-                  >
-                    <Ionicons name="create-outline" size={20} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
                   <TouchableOpacity
                     style={styles.iconBtn}
                     onPress={() =>
@@ -194,10 +198,23 @@ const styles = StyleSheet.create({
     flex: 1,
     gap: 4,
   },
+  cardNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 6,
+  },
+  editIconBtn: {
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   cardName: {
     fontSize: 16,
     fontWeight: '800',
     color: COLORS.textPrimary,
+    flex: 1,
   },
   cardMeta: {
     fontSize: 12,

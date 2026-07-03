@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException
 from typing import List
 from database import db, to_object_id
-from models import Dragon, DragonCreate, DragonUpdate, compute_age_category
+from models import Dragon, DragonCreate, DragonUpdate, DragonActivityStateUpdate, compute_age_category
 
 router = APIRouter(prefix="/dragons", tags=["dragons"])
 
@@ -74,3 +74,20 @@ async def delete_dragon(dragon_id: str):
     await db.completions.delete_many({"dragon_id": dragon_id})
     await db.weight_entries.delete_many({"dragon_id": dragon_id})
     return {"success": True}
+
+
+@router.put("/{dragon_id}/activity-state", response_model=Dragon, response_model_by_alias=False)
+async def update_dragon_activity_state(dragon_id: str, payload: DragonActivityStateUpdate):
+    """Toggle a dragon between 'active' (normal daily plan) and 'brumation'
+    (hibernation-like dormant period - feeding tasks are hidden from the
+    daily overview until switched back to 'active'). Care/Light&Heat tasks
+    are unaffected either way."""
+    try:
+        oid = to_object_id(dragon_id)
+    except ValueError:
+        raise HTTPException(status_code=400, detail="Ugyldigt id")
+    result = await db.dragons.update_one({"_id": oid}, {"$set": {"activity_state": payload.activity_state}})
+    if result.matched_count == 0:
+        raise HTTPException(status_code=404, detail="Agame ikke fundet")
+    doc = await db.dragons.find_one({"_id": oid})
+    return Dragon.from_mongo(doc)

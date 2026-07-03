@@ -19,6 +19,7 @@ export interface Dragon {
   birthday: string;
   age_category: AgeCategory;
   photo_base64?: string | null;
+  activity_state?: 'active' | 'brumation';
   created_at: string;
 }
 
@@ -63,6 +64,7 @@ export interface OverviewDragon {
   name: string;
   photo_base64?: string | null;
   age_category: AgeCategory;
+  activity_state: 'active' | 'brumation';
   tasks: OverviewTask[];
 }
 

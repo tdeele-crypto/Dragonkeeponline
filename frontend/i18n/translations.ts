@@ -249,6 +249,12 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
 
     'dragonColumn.emptyTasks': 'Ingen opgaver i dag for {{age}}',
 
+    'overview.activeState': 'Aktiv',
+    'overview.brumationState': 'Dvale',
+    'overview.brumationToastOn': '{{name}} er nu i dvale - fodring skjules indtil aktiveret igen',
+    'overview.brumationToastOff': '{{name}} er aktiv igen - fodring vises som normalt',
+    'overview.activityUpdateError': 'Kunne ikke opdatere status',
+
     'taskRow.automatic': 'Automatisk',
   },
   en: {
@@ -493,6 +499,12 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'copyToDays.done': 'Done',
 
     'dragonColumn.emptyTasks': 'No tasks today for {{age}}',
+
+    'overview.activeState': 'Active',
+    'overview.brumationState': 'Brumation',
+    'overview.brumationToastOn': '{{name}} is now in brumation - feeding is hidden until reactivated',
+    'overview.brumationToastOff': '{{name}} is active again - feeding shows as normal',
+    'overview.activityUpdateError': 'Could not update status',
 
     'taskRow.automatic': 'Automatic',
   },

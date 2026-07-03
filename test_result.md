@@ -278,3 +278,56 @@
 ## agent_communication (new):
     - agent: "main"
       message: "Built the infrastructure the user asked for: (1) App now auto-seeds the default care plan on a completely fresh/empty database (first install), not just on manual Admin reset. (2) Added scripts/capture_default_careplan.py - when the user finishes customizing their Times/Feeding/Care/Light&Heat/Schedules to their liking in the app and tells me (in chat) it's ready, I will run this script to capture their EXACT edited state and permanently overwrite the built-in default plan file, so it becomes what loads on reset AND on fresh installs going forward. No new 'Save as default' UI button was added, per explicit user preference (they will just ask in chat when ready). This session's changes are backend-only infra with no new UI - verified via direct server logs/API checks (restart-with-data preserved; simulated-fresh-install triggered correct auto-seed with dragons untouched); did not re-invoke the full testing_agent since there's no new UI surface to click through and previous care-plan-reset test coverage already validates the underlying seeding function this reuses."
+
+
+## FOLLOW-UP (this session): Dragon card icon layout + Active/Brumation toggle on Overview
+
+### backend:
+  - task: "Dragon activity_state (active/brumation) + feeding-task filtering"
+    implemented: true
+    working: "NA"
+    file: "backend/models.py, backend/routes/dragons.py, backend/routes/overview.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Dragon model has new `activity_state: 'active'|'brumation'` field, default 'active'. New PUT /api/dragons/{id}/activity-state endpoint (body: {activity_state}) to toggle it - acts like a radio button (only one of the two states at a time, persisted in DB). GET /api/daily-overview now returns `activity_state` per dragon, and when a dragon is in 'brumation', ALL 'fodring' (feeding) category schedule_slots are excluded from that dragon's task list for the day (pleje/lys tasks unaffected). Manually verified: active dragon had 7 tasks (fodring+pleje+lys), switched to brumation -> 4 tasks (only pleje+lys, fodring gone), switched back to active -> 7 tasks again."
+
+### frontend:
+  - task: "Active/Brumation toggle icons on Overview (per dragon, radio-button behavior)"
+    implemented: true
+    working: "NA"
+    file: "frontend/components/DragonColumn.tsx, frontend/app/(tabs)/index.tsx, frontend/assets/images/status/*.png"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Added 2 tappable icon images (user-provided: active.png/active-grey.png/brumation.png/brumation-grey.png, saved to frontend/assets/images/status/) at the far right of each dragon's Name+Age row on the Overview screen (testID dragon-activity-active-{id} / dragon-activity-brumation-{id}). Tapping calls PUT /dragons/{id}/activity-state and shows a toast, then triggers a full overview refetch so the task list updates (feeding tasks disappear/reappear). Only the icon matching current state is shown in color; the other is greyed out - exactly like radio buttons (one is always 'on'). Not yet interactively tested (screenshot tool showed blank canvas for both this and prior verifications this session despite bundle compiling cleanly with no console errors and containing the new asset references - suspect a tool/env rendering quirk, not a real app bug, but please verify visually via testing_agent)."
+  - task: "Dragons screen card layout - moved edit icon to free up space for meta/age"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/(tabs)/dragons.tsx"
+    stuck_count: 0
+    priority: "medium"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Per user's annotated screenshot: moved the edit (pencil) icon from the 3-icon action column (edit/weight/delete) to sit inline next to the dragon's name at the top of the card info block. The action column on the right now only has weight+delete (2 icons instead of 3), freeing horizontal width for the gender/color/morph meta line and the age badge so they wrap less."
+
+## test_plan (updated):
+  current_focus:
+    - "Dragon activity_state (active/brumation) + feeding-task filtering"
+    - "Active/Brumation toggle icons on Overview (per dragon, radio-button behavior)"
+    - "Dragons screen card layout - moved edit icon to free up space for meta/age"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+## agent_communication (new):
+    - agent: "main"
+      message: "Two changes this round: (1) Dragons screen card: moved the edit/pencil icon to sit next to the dragon's name (top of card) instead of in the 3-icon column, so the meta text (gender/color/morph) and age badge have more room and wrap less. (2) NEW Overview feature: each dragon column now has 2 small icon buttons (Active / Brumation) to the right of the name+age, behaving like a radio button - exactly one is always 'on' (colored), the other greyed out. Backend: dragon.activity_state ('active'|'brumation') persists via PUT /api/dragons/{id}/activity-state; when 'brumation', ALL feeding tasks are hidden from that dragon's daily overview (care/light&heat tasks unaffected) until switched back to 'active'. Manually verified backend end-to-end (7 tasks active -> 4 tasks brumation -> 7 tasks active again). Please test: (a) tapping Active/Brumation icons toggles state and visually swaps which icon is colored vs grey, (b) switching to Brumation immediately removes feeding task rows from that dragon's column (pleje/lys rows remain), switching back restores them, (c) state persists after leaving/reopening the Overview tab or app, (d) Dragons screen card - edit icon now next to name, weight+delete icons still work, verify text/age no longer wraps awkwardly. IMPORTANT: this feature works PER DRAGON independently - toggling one dragon must not affect others."

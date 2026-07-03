@@ -10,6 +10,7 @@ Gender = Literal["Han", "Hun", "Ukendt"]
 AppLanguage = Literal["en", "da"]
 WeightUnitPref = Literal["g", "oz"]
 TimeFormatPref = Literal["12h", "24h"]
+ActivityState = Literal["active", "brumation"]
 
 
 def compute_age_category(birthday: str) -> AgeCategory:
@@ -41,6 +42,7 @@ class Dragon(BaseDocument):
     birthday: str
     age_category: AgeCategory
     photo_base64: Optional[str] = None
+    activity_state: ActivityState = "active"
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -60,6 +62,10 @@ class DragonUpdate(BaseModel):
     morph: Optional[str] = None
     birthday: Optional[str] = None
     photo_base64: Optional[str] = None
+
+
+class DragonActivityStateUpdate(BaseModel):
+    activity_state: ActivityState
 
 
 class TaskItem(BaseDocument):

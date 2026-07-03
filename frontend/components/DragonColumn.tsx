@@ -1,22 +1,49 @@
-import React from 'react';
-import { ScrollView, StyleSheet, Text, View } from 'react-native';
+import React, { useState } from 'react';
+import { Image, ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import DragonAvatar from '@/components/DragonAvatar';
 import TaskRow from '@/components/TaskRow';
 import { COLORS } from '@/constants/colors';
 import { getAgeLabel } from '@/i18n/translations';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
+import { useToast } from '@/context/OverlayContext';
+import { api } from '@/utils/api';
 import type { OverviewDragon } from '@/types';
+
+const ACTIVE_ICON = require('../assets/images/status/active.png');
+const ACTIVE_GREY_ICON = require('../assets/images/status/active-grey.png');
+const BRUMATION_ICON = require('../assets/images/status/brumation.png');
+const BRUMATION_GREY_ICON = require('../assets/images/status/brumation-grey.png');
 
 interface DragonColumnProps {
   dragon: OverviewDragon;
   width: number;
   onToggleTask: (slotId: string) => void;
+  onActivityChanged: () => void;
 }
 
-export default function DragonColumn({ dragon, width, onToggleTask }: DragonColumnProps) {
+export default function DragonColumn({ dragon, width, onToggleTask, onActivityChanged }: DragonColumnProps) {
   const { pageTitleColor, language, t } = useAdminSettings();
+  const showToast = useToast();
+  const [updatingActivity, setUpdatingActivity] = useState(false);
   const ageLabel = getAgeLabel(dragon.age_category, language);
   const doneCount = dragon.tasks.filter((t) => t.completed || t.is_automatic).length;
+
+  const handleSetActivity = async (state: 'active' | 'brumation') => {
+    if (state === dragon.activity_state || updatingActivity) return;
+    setUpdatingActivity(true);
+    try {
+      await api.put(`/dragons/${dragon.dragon_id}/activity-state`, { activity_state: state });
+      showToast(
+        t(state === 'brumation' ? 'overview.brumationToastOn' : 'overview.brumationToastOff', { name: dragon.name }),
+        'success'
+      );
+      onActivityChanged();
+    } catch (e: any) {
+      showToast(e.message || t('overview.activityUpdateError'), 'error');
+    } finally {
+      setUpdatingActivity(false);
+    }
+  };
 
   return (
     <View style={[styles.column, { width }]} testID={`dragon-column-${dragon.dragon_id}`}>
@@ -33,6 +60,30 @@ export default function DragonColumn({ dragon, width, onToggleTask }: DragonColu
           <View style={styles.ageBadge}>
             <Text style={styles.ageText}>{ageLabel}</Text>
           </View>
+        </View>
+        <View style={styles.activityToggle}>
+          <TouchableOpacity
+            onPress={() => handleSetActivity('active')}
+            disabled={updatingActivity}
+            testID={`dragon-activity-active-${dragon.dragon_id}`}
+            accessibilityLabel={t('overview.activeState')}
+          >
+            <Image
+              source={dragon.activity_state === 'active' ? ACTIVE_ICON : ACTIVE_GREY_ICON}
+              style={styles.activityIcon}
+            />
+          </TouchableOpacity>
+          <TouchableOpacity
+            onPress={() => handleSetActivity('brumation')}
+            disabled={updatingActivity}
+            testID={`dragon-activity-brumation-${dragon.dragon_id}`}
+            accessibilityLabel={t('overview.brumationState')}
+          >
+            <Image
+              source={dragon.activity_state === 'brumation' ? BRUMATION_ICON : BRUMATION_GREY_ICON}
+              style={styles.activityIcon}
+            />
+          </TouchableOpacity>
         </View>
       </View>
 
@@ -72,12 +123,22 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 12,
+    gap: 10,
     marginBottom: 10,
   },
   headerText: {
     flex: 1,
     gap: 4,
+  },
+  activityToggle: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  activityIcon: {
+    width: 30,
+    height: 30,
+    resizeMode: 'contain',
   },
   name: {
     fontSize: 18,

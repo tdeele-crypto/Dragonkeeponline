@@ -157,6 +157,7 @@ export default function DagsoversigtScreen() {
               dragon={dragon}
               width={COLUMN_WIDTH}
               onToggleTask={(slotId) => toggleTask(dragon.dragon_id, slotId)}
+              onActivityChanged={() => fetchOverview(date, false)}
             />
           ))}
         </ScrollView>

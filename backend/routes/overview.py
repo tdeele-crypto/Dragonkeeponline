@@ -32,10 +32,17 @@ async def get_daily_overview(date: str = Query(...)):
     for dragon in dragons:
         dragon_id = str(dragon["_id"])
         age_category = compute_age_category(dragon["birthday"])
-        slots = await db.schedule_slots.find({
+        activity_state = dragon.get("activity_state", "active")
+        slot_query = {
             "age_category": age_category,
             "day_of_week": day_of_week,
-        }).to_list(1000)
+        }
+        if activity_state == "brumation":
+            # Bearded dragons in brumation stop eating - hide all feeding
+            # tasks until switched back to "active". Care/Light&Heat tasks
+            # (temperature checks, UVB, water, cleaning) still apply.
+            slot_query["category"] = {"$ne": "fodring"}
+        slots = await db.schedule_slots.find(slot_query).to_list(1000)
         tasks = []
         for slot in slots:
             slot_id = str(slot["_id"])
@@ -55,6 +62,7 @@ async def get_daily_overview(date: str = Query(...)):
             "name": dragon["name"],
             "photo_base64": dragon.get("photo_base64"),
             "age_category": age_category,
+            "activity_state": activity_state,
             "tasks": tasks,
         })
 
