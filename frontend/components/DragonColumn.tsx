@@ -136,8 +136,8 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   activityIcon: {
-    width: 30,
-    height: 30,
+    width: 52,
+    height: 52,
     resizeMode: 'contain',
   },
   name: {
