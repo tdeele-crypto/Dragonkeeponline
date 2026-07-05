@@ -14,7 +14,6 @@ interface AdminSettingsValue {
   timeFormat: TimeFormat;
   lightSummerStart: string;
   lightWinterStart: string;
-  lightWinterShortenHours: number;
   t: (key: string, vars?: Record<string, string | number>) => string;
   refresh: () => Promise<void>;
 }
@@ -33,7 +32,6 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('12h');
   const [lightSummerStart, setLightSummerStart] = useState('03-01');
   const [lightWinterStart, setLightWinterStart] = useState('09-01');
-  const [lightWinterShortenHours, setLightWinterShortenHours] = useState(3);
 
   const refresh = useCallback(async () => {
     try {
@@ -49,9 +47,6 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
       setTimeFormat((data.time_format as TimeFormat) || '12h');
       setLightSummerStart(data.light_summer_start || '03-01');
       setLightWinterStart(data.light_winter_start || '09-01');
-      setLightWinterShortenHours(
-        typeof data.light_winter_shorten_hours === 'number' ? data.light_winter_shorten_hours : 3
-      );
     } catch (e) {
       // Settings are optional decoration/preferences - fail silently.
       console.log('Could not load admin settings:', e);
@@ -81,7 +76,6 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
         timeFormat,
         lightSummerStart,
         lightWinterStart,
-        lightWinterShortenHours,
         t,
         refresh,
       }}

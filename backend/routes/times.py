@@ -31,7 +31,9 @@ async def update_time(time_id: str, payload: TimeSlotCreate):
     existing = await db.times.find_one({"time": payload.time, "_id": {"$ne": oid}})
     if existing:
         raise HTTPException(status_code=400, detail="Dette tidspunkt findes allerede")
-    result = await db.times.update_one({"_id": oid}, {"$set": {"time": payload.time}})
+    result = await db.times.update_one(
+        {"_id": oid}, {"$set": {"time": payload.time, "winter_time": payload.winter_time}}
+    )
     if result.matched_count == 0:
         raise HTTPException(status_code=404, detail="Tidspunkt ikke fundet")
     doc = await db.times.find_one({"_id": oid})

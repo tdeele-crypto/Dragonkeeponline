@@ -64,6 +64,8 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'tasks.emptyTimes': 'Ingen tidspunkter tilføjet endnu',
     'tasks.emptyItems': 'Ingen emner tilføjet endnu',
     'tasks.automatic': 'Automatisk',
+    'tasks.winterColumnHeader': 'Vinter',
+    'tasks.winterTimeAuto': 'Auto (+30 min)',
     'tasks.settingsTitle': 'Indstillinger',
     'tasks.remindersLabel': 'Påmindelser',
     'tasks.remindersSubLabel': 'Få lokale notifikationer for planlagte opgaver',
@@ -137,6 +139,10 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'listItemForm.addPrefix': 'Tilføj',
     'listItemForm.timeWord': 'tidspunkt',
     'listItemForm.timeLabel': 'Tidspunkt',
+    'listItemForm.winterTimeToggleLabel': 'Speciel vintertid',
+    'listItemForm.winterTimeToggleSubLabel':
+      'Angiv et andet tidspunkt der bruges i vinterperioden. Slået fra: opgaven starter automatisk 30 min. efter dagens lys tændt-tidspunkt i vinterperioden.',
+    'listItemForm.winterTimeLabel': 'Vintertid',
     'listItemForm.namePlaceholder': 'F.eks. Larver',
     'listItemForm.nameLabel': 'Navn',
     'listItemForm.automaticLabel': 'Automatisk',
@@ -237,15 +243,14 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'admin.careplanResetSuccess': 'Plejeplan indlæst: {{times}} tider, {{items}} emner, {{slots}} ugeplan-opgaver',
     'admin.careplanResetError': 'Kunne ikke nulstille plejeplan',
 
-    'admin.seasonSectionTitle': 'Sæsonbestemt lysjustering',
+    'admin.seasonSectionTitle': 'Sæsonperiode',
     'admin.seasonSectionSubtitle':
-      'I vinterperioden afkortes dagslys/varme-tiderne automatisk på Dagsoversigten, symmetrisk fra begge ender af dagen. Ugeplanerne selv ændres ikke.',
+      'Angiv hvornår vinterperioden starter og slutter. I vinterperioden bruger Dagsoversigten automatisk de vintertider, du sætter under Opgaver → Tider.',
     'admin.seasonSummerLabel': 'Sommer starter (dag-måned)',
     'admin.seasonWinterLabel': 'Vinter starter (dag-måned)',
-    'admin.seasonHoursLabel': 'Afkort lys/varme med (timer)',
     'admin.seasonUpdateSuccess': 'Sæsonindstilling opdateret',
     'admin.seasonUpdateError': 'Kunne ikke opdatere sæsonindstilling',
-    'admin.seasonWinterBadge': 'Vinterperiode - lys afkortet',
+    'admin.seasonWinterBadge': 'Vinterperiode - vintertider aktive',
 
     'copyToDays.title': 'Kopier til dage & perioder',
     'copyToDays.subtitle':
@@ -325,6 +330,8 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'tasks.emptyTimes': 'No times added yet',
     'tasks.emptyItems': 'No items added yet',
     'tasks.automatic': 'Automatic',
+    'tasks.winterColumnHeader': 'Winter',
+    'tasks.winterTimeAuto': 'Auto (+30 min)',
     'tasks.settingsTitle': 'Settings',
     'tasks.remindersLabel': 'Reminders',
     'tasks.remindersSubLabel': 'Get local notifications for scheduled tasks',
@@ -398,6 +405,10 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'listItemForm.addPrefix': 'Add',
     'listItemForm.timeWord': 'time',
     'listItemForm.timeLabel': 'Time',
+    'listItemForm.winterTimeToggleLabel': 'Special winter time',
+    'listItemForm.winterTimeToggleSubLabel':
+      'Set a different time to use during the winter period. Off: the task automatically starts 30 min after the day\'s light-on time during winter.',
+    'listItemForm.winterTimeLabel': 'Winter time',
     'listItemForm.namePlaceholder': 'e.g. Mealworms',
     'listItemForm.nameLabel': 'Name',
     'listItemForm.automaticLabel': 'Automatic',
@@ -498,15 +509,14 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'admin.careplanResetSuccess': 'Care plan loaded: {{times}} times, {{items}} items, {{slots}} schedule tasks',
     'admin.careplanResetError': 'Could not reset care plan',
 
-    'admin.seasonSectionTitle': 'Seasonal Light Adjustment',
+    'admin.seasonSectionTitle': 'Season period',
     'admin.seasonSectionSubtitle':
-      'During the winter period, light/heat times are automatically shortened on the Daily Overview, symmetrically from both ends of the day. The Schedules themselves are not changed.',
+      'Set when the winter period starts and ends. During the winter period, the Daily Overview automatically uses the winter times you set under Tasks → Times.',
     'admin.seasonSummerLabel': 'Summer starts (day-month)',
     'admin.seasonWinterLabel': 'Winter starts (day-month)',
-    'admin.seasonHoursLabel': 'Shorten light/heat by (hours)',
     'admin.seasonUpdateSuccess': 'Season setting updated',
     'admin.seasonUpdateError': 'Could not update season setting',
-    'admin.seasonWinterBadge': 'Winter period - light shortened',
+    'admin.seasonWinterBadge': 'Winter period - winter times active',
 
     'copyToDays.title': 'Copy to days & periods',
     'copyToDays.subtitle':

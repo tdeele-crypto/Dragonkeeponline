@@ -75,7 +75,6 @@ export default function AdminScreen() {
     timeFormat,
     lightSummerStart,
     lightWinterStart,
-    lightWinterShortenHours,
     t,
     refresh,
   } = useAdminSettings();
@@ -99,7 +98,6 @@ export default function AdminScreen() {
 
   const [summerDate, setSummerDate] = useState<Date>(() => monthDayToDate('03-01'));
   const [winterDate, setWinterDate] = useState<Date>(() => monthDayToDate('09-01'));
-  const [hoursInput, setHoursInput] = useState('3');
   const [showSummerPicker, setShowSummerPicker] = useState(false);
   const [showWinterPicker, setShowWinterPicker] = useState(false);
   const [savingSeason, setSavingSeason] = useState(false);
@@ -129,8 +127,7 @@ export default function AdminScreen() {
   useEffect(() => {
     setSummerDate(monthDayToDate(lightSummerStart));
     setWinterDate(monthDayToDate(lightWinterStart));
-    setHoursInput(String(lightWinterShortenHours));
-  }, [lightSummerStart, lightWinterStart, lightWinterShortenHours]);
+  }, [lightSummerStart, lightWinterStart]);
 
   const saveSeasonSetting = async (payload: Record<string, string | number>) => {
     setSavingSeason(true);
@@ -157,15 +154,6 @@ export default function AdminScreen() {
     if (event.type === 'dismissed' || !selectedDate) return;
     setWinterDate(selectedDate);
     saveSeasonSetting({ light_winter_start: dateToMonthDay(selectedDate) });
-  };
-
-  const commitHoursInput = () => {
-    const parsed = parseFloat(hoursInput.replace(',', '.'));
-    const safeValue = Number.isFinite(parsed) && parsed >= 0 ? parsed : lightWinterShortenHours;
-    setHoursInput(String(safeValue));
-    if (safeValue !== lightWinterShortenHours) {
-      saveSeasonSetting({ light_winter_shorten_hours: safeValue });
-    }
   };
 
   const pickBannerImage = async () => {
@@ -364,18 +352,6 @@ export default function AdminScreen() {
             icon="snow-outline"
           />
 
-          <Text style={styles.label}>{t('admin.seasonHoursLabel')}</Text>
-          <TextInput
-            style={styles.input}
-            value={hoursInput}
-            onChangeText={setHoursInput}
-            onBlur={commitHoursInput}
-            onEndEditing={commitHoursInput}
-            keyboardType="decimal-pad"
-            placeholder="3"
-            placeholderTextColor={COLORS.textMuted}
-            testID="admin-season-hours-input"
-          />
           {savingSeason && (
             <ActivityIndicator color={COLORS.primary} size="small" testID="admin-season-saving-indicator" />
           )}

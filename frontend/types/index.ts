@@ -36,6 +36,7 @@ export interface TaskItem {
 export interface TimeSlot {
   id: string;
   time: string;
+  winter_time?: string | null;
   created_at: string;
 }
 
@@ -84,7 +85,6 @@ export interface AppSettings {
   time_format?: '12h' | '24h';
   light_summer_start?: string;
   light_winter_start?: string;
-  light_winter_shorten_hours?: number;
   updated_at: string;
 }
 

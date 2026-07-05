@@ -216,27 +216,50 @@ export default function ListsScreen() {
             times.length === 0 ? (
               <Text style={styles.emptyText}>{t('tasks.emptyTimes')}</Text>
             ) : (
-              times.map((time) => (
-                <View key={time.id} style={styles.row} testID={`time-row-${time.id}`}>
-                  <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
-                  <Text style={styles.rowText}>{formatTimeDisplay(time.time, timeFormat)}</Text>
-                  <TouchableOpacity
-                    onPress={() =>
-                      router.push({
-                        pathname: '/list-item-form',
-                        params: { category: 'tider', id: time.id, currentTime: time.time },
-                      })
-                    }
-                    testID={`time-edit-button-${time.id}`}
-                    style={styles.rowIconBtn}
-                  >
-                    <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
-                  </TouchableOpacity>
-                  <TouchableOpacity onPress={() => handleDeleteTime(time)} testID={`time-delete-button-${time.id}`} style={styles.rowIconBtn}>
-                    <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
-                  </TouchableOpacity>
+              <>
+                <View style={styles.timeHeaderRow} testID="times-column-header">
+                  <View style={{ width: 18 }} />
+                  <Text style={[styles.timeHeaderText, { flex: 1 }]} />
+                  <Text style={styles.timeHeaderText}>{t('tasks.winterColumnHeader')}</Text>
+                  <View style={{ width: 36 + 36 }} />
                 </View>
-              ))
+                {times.map((time) => (
+                  <View key={time.id} style={styles.row} testID={`time-row-${time.id}`}>
+                    <Ionicons name="time-outline" size={18} color={COLORS.textSecondary} />
+                    <Text style={styles.rowText}>{formatTimeDisplay(time.time, timeFormat)}</Text>
+                    {time.winter_time ? (
+                      <View style={styles.winterBadge} testID={`time-winter-badge-${time.id}`}>
+                        <Ionicons name="snow-outline" size={12} color={COLORS.primaryDark} />
+                        <Text style={styles.winterBadgeText}>{formatTimeDisplay(time.winter_time, timeFormat)}</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.winterAutoText} testID={`time-winter-auto-${time.id}`}>
+                        {t('tasks.winterTimeAuto')}
+                      </Text>
+                    )}
+                    <TouchableOpacity
+                      onPress={() =>
+                        router.push({
+                          pathname: '/list-item-form',
+                          params: {
+                            category: 'tider',
+                            id: time.id,
+                            currentTime: time.time,
+                            currentWinterTime: time.winter_time || '',
+                          },
+                        })
+                      }
+                      testID={`time-edit-button-${time.id}`}
+                      style={styles.rowIconBtn}
+                    >
+                      <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity onPress={() => handleDeleteTime(time)} testID={`time-delete-button-${time.id}`} style={styles.rowIconBtn}>
+                      <Ionicons name="trash-outline" size={18} color={COLORS.danger} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+              </>
             )
           ) : filteredItems.length === 0 ? (
             <Text style={styles.emptyText}>{t('tasks.emptyItems')}</Text>
@@ -376,6 +399,21 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     paddingVertical: 30,
   },
+  timeHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 14,
+    marginBottom: 6,
+  },
+  timeHeaderText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    textAlign: 'center',
+    minWidth: 78,
+  },
   row: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -410,6 +448,29 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.textMuted,
     textTransform: 'uppercase',
+  },
+  winterBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: COLORS.primaryLight,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    minWidth: 78,
+    justifyContent: 'center',
+  },
+  winterBadgeText: {
+    fontSize: 12,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
+  },
+  winterAutoText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: COLORS.textMuted,
+    minWidth: 78,
+    textAlign: 'center',
   },
   settingsSection: {
     marginTop: 24,

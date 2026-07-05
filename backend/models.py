@@ -86,11 +86,13 @@ class TaskItemCreate(BaseModel):
 
 class TimeSlot(BaseDocument):
     time: str
+    winter_time: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
 class TimeSlotCreate(BaseModel):
     time: str
+    winter_time: Optional[str] = None
 
 
 class ScheduleSlot(BaseDocument):
@@ -168,7 +170,6 @@ class AppSettings(BaseDocument):
     time_format: TimeFormatPref = "12h"
     light_summer_start: str = "03-01"
     light_winter_start: str = "09-01"
-    light_winter_shorten_hours: float = 3.0
     updated_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
 
 
@@ -184,4 +185,3 @@ class AppSettingsUpdate(BaseModel):
     time_format: Optional[TimeFormatPref] = None
     light_summer_start: Optional[str] = None
     light_winter_start: Optional[str] = None
-    light_winter_shorten_hours: Optional[float] = None

@@ -26,11 +26,12 @@ export default function ListItemFormScreen() {
   const router = useRouter();
   const showToast = useToast();
   const { language, timeFormat, t } = useAdminSettings();
-  const { category, id, currentName, currentTime, currentAutomatic } = useLocalSearchParams<{
+  const { category, id, currentName, currentTime, currentWinterTime, currentAutomatic } = useLocalSearchParams<{
     category: string;
     id?: string;
     currentName?: string;
     currentTime?: string;
+    currentWinterTime?: string;
     currentAutomatic?: string;
   }>();
   const isTime = category === 'tider';
@@ -49,6 +50,17 @@ export default function ListItemFormScreen() {
     return new Date();
   });
   const [showTimePicker, setShowTimePicker] = useState(false);
+  const [winterTimeEnabled, setWinterTimeEnabled] = useState(!!currentWinterTime);
+  const [winterTime, setWinterTime] = useState(() => {
+    if (currentWinterTime) {
+      const [hh, mm] = currentWinterTime.split(':').map(Number);
+      const d = new Date();
+      d.setHours(hh, mm, 0, 0);
+      return d;
+    }
+    return new Date();
+  });
+  const [showWinterTimePicker, setShowWinterTimePicker] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const titleLabel = isTime ? t('listItemForm.timeWord') : getCategoryLabel(category as TaskCategory, language).toLowerCase();
@@ -59,11 +71,17 @@ export default function ListItemFormScreen() {
       if (isTime) {
         const hh = String(time.getHours()).padStart(2, '0');
         const mm = String(time.getMinutes()).padStart(2, '0');
+        const winterHh = String(winterTime.getHours()).padStart(2, '0');
+        const winterMm = String(winterTime.getMinutes()).padStart(2, '0');
+        const payload = {
+          time: `${hh}:${mm}`,
+          winter_time: winterTimeEnabled ? `${winterHh}:${winterMm}` : null,
+        };
         if (isEdit) {
-          await api.put(`/times/${id}`, { time: `${hh}:${mm}` });
+          await api.put(`/times/${id}`, payload);
           showToast(t('listItemForm.timeUpdated'), 'success');
         } else {
-          await api.post('/times', { time: `${hh}:${mm}` });
+          await api.post('/times', payload);
           showToast(t('listItemForm.timeAdded'), 'success');
         }
       } else {
@@ -107,13 +125,38 @@ export default function ListItemFormScreen() {
       <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
         <View style={styles.form}>
           {isTime ? (
-            <PickerField
-              label={t('listItemForm.timeLabel')}
-              value={formatTimeDisplay(`${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`, timeFormat)}
-              onPress={() => setShowTimePicker(true)}
-              testID="list-item-form-time-picker"
-              icon="time-outline"
-            />
+            <>
+              <PickerField
+                label={t('listItemForm.timeLabel')}
+                value={formatTimeDisplay(`${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`, timeFormat)}
+                onPress={() => setShowTimePicker(true)}
+                testID="list-item-form-time-picker"
+                icon="time-outline"
+              />
+
+              <View style={styles.autoRow} testID="list-item-form-winter-time-row">
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.autoLabel}>{t('listItemForm.winterTimeToggleLabel')}</Text>
+                  <Text style={styles.autoSubLabel}>{t('listItemForm.winterTimeToggleSubLabel')}</Text>
+                </View>
+                <Switch
+                  value={winterTimeEnabled}
+                  onValueChange={setWinterTimeEnabled}
+                  trackColor={{ false: COLORS.border, true: COLORS.categories.lys.bg }}
+                  testID="list-item-form-winter-time-toggle"
+                />
+              </View>
+
+              {winterTimeEnabled && (
+                <PickerField
+                  label={t('listItemForm.winterTimeLabel')}
+                  value={formatTimeDisplay(`${String(winterTime.getHours()).padStart(2, '0')}:${String(winterTime.getMinutes()).padStart(2, '0')}`, timeFormat)}
+                  onPress={() => setShowWinterTimePicker(true)}
+                  testID="list-item-form-winter-time-picker"
+                  icon="snow-outline"
+                />
+              )}
+            </>
           ) : (
             <FormField
               label={t('listItemForm.nameLabel')}
@@ -160,6 +203,19 @@ export default function ListItemFormScreen() {
           onChange={(_event, selectedDate) => {
             setShowTimePicker(Platform.OS === 'ios');
             if (selectedDate) setTime(selectedDate);
+          }}
+        />
+      )}
+
+      {showWinterTimePicker && (
+        <DateTimePicker
+          value={winterTime}
+          mode="time"
+          display="default"
+          minuteInterval={5}
+          onChange={(_event, selectedDate) => {
+            setShowWinterTimePicker(Platform.OS === 'ios');
+            if (selectedDate) setWinterTime(selectedDate);
           }}
         />
       )}
