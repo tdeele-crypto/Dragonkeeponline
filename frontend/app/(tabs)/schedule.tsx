@@ -39,7 +39,7 @@ export default function ScheduleScreen() {
     if (showSpinner) setLoading(true);
     try {
       const [slotsData, timesData, itemsData] = await Promise.all([
-        api.get(`/schedule-slots?age_category=${ageCategory}&day_of_week=${dayOfWeek}`),
+        api.get(`/schedule-slots?age_category=${encodeURIComponent(ageCategory)}&day_of_week=${encodeURIComponent(dayOfWeek)}`),
         api.get('/times'),
         api.get('/task-items'),
       ]);

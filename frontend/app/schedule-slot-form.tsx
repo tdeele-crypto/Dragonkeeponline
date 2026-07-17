@@ -54,7 +54,7 @@ export default function ScheduleSlotFormScreen() {
 
         if (isEdit) {
           const slots: ScheduleSlot[] = await api.get(
-            `/schedule-slots?age_category=${params.ageCategory}&day_of_week=${params.dayOfWeek}`
+            `/schedule-slots?age_category=${encodeURIComponent(params.ageCategory)}&day_of_week=${encodeURIComponent(params.dayOfWeek)}`
           );
           const slot = slots.find((s) => s.id === params.id);
           if (slot) {
