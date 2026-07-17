@@ -272,7 +272,7 @@ export default function AdminScreen() {
 
       const canShare = await Sharing.isAvailableAsync();
       if (canShare) {
-        await Sharing.shareAsync(file.uri, { mimeType: 'application/json' });
+        await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: fileName });
       } else {
         showToast(t('admin.exportSuccess'), 'success');
       }

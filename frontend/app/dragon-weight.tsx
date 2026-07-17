@@ -15,6 +15,8 @@ import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { LineChart } from 'react-native-gifted-charts';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { COLORS } from '@/constants/colors';
 import { formatDateISO } from '@/constants/data';
 import {
@@ -30,7 +32,8 @@ import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import FormField from '@/components/FormField';
 import PickerField from '@/components/PickerField';
-import type { WeightEntry } from '@/types';
+import { buildWeightPdfHtml, computeExactAge } from '@/utils/weightPdf';
+import type { Dragon, WeightEntry } from '@/types';
 
 const SCREEN_WIDTH = Dimensions.get('window').width;
 const CHART_WIDTH = Math.max(SCREEN_WIDTH - 90, 260);
@@ -45,6 +48,8 @@ export default function DragonWeightScreen() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [entries, setEntries] = useState<WeightEntry[]>([]);
+  const [dragon, setDragon] = useState<Dragon | null>(null);
+  const [exportingPdf, setExportingPdf] = useState(false);
 
   const [weightInput, setWeightInput] = useState('');
   const [noteInput, setNoteInput] = useState('');
@@ -53,8 +58,12 @@ export default function DragonWeightScreen() {
 
   const fetchEntries = async () => {
     try {
-      const data: WeightEntry[] = await api.get(`/dragons/${id}/weights`);
-      setEntries(data);
+      const [entriesData, dragonData]: [WeightEntry[], Dragon] = await Promise.all([
+        api.get(`/dragons/${id}/weights`),
+        api.get(`/dragons/${id}`),
+      ]);
+      setEntries(entriesData);
+      setDragon(dragonData);
     } catch (e: any) {
       showToast(e.message || t('weight.fetchError'), 'error');
     } finally {
@@ -133,6 +142,64 @@ export default function DragonWeightScreen() {
     });
   };
 
+  const handleExportPdf = async () => {
+    if (entries.length === 0) {
+      showToast(t('weight.exportPdfNoData'), 'error');
+      return;
+    }
+    if (Platform.OS === 'web') {
+      showToast(t('weight.exportPdfWebUnsupported'), 'error');
+      return;
+    }
+    setExportingPdf(true);
+    try {
+      const ageText = dragon
+        ? computeExactAge(dragon.birthday, {
+            years: t('weight.pdfAgeYears'),
+            months: t('weight.pdfAgeMonths'),
+            month: t('weight.pdfAgeMonth'),
+            underMonth: t('weight.pdfAgeUnderMonth'),
+          })
+        : '';
+      const html = buildWeightPdfHtml({
+        dragonName: name || dragon?.name || '',
+        birthday: dragon?.birthday || formatDateISO(new Date()),
+        ageText,
+        entries,
+        weightUnit,
+        language,
+        labels: {
+          birthdayLabel: t('weight.pdfBirthdayLabel'),
+          ageLabel: t('weight.pdfAgeLabel'),
+          tableDate: t('weight.pdfTableDate'),
+          tableWeight: t('weight.pdfTableWeight'),
+          tableNotes: t('weight.pdfTableNotes'),
+          noEntries: t('weight.pdfNoEntries'),
+          chartTitle: t('weight.pdfChartTitle'),
+          chartEmpty: t('weight.pdfChartEmpty'),
+          generatedOn: t('weight.pdfGeneratedOn'),
+          historyTitle: t('weight.pdfHistoryTitle'),
+        },
+      });
+
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          UTI: 'com.adobe.pdf',
+          dialogTitle: `${name || dragon?.name || ''} - ${t('weight.headerSuffix')}`,
+        });
+      } else {
+        showToast(t('weight.exportPdfSuccess'), 'success');
+      }
+    } catch (e: any) {
+      showToast(e.message || t('weight.exportPdfError'), 'error');
+    } finally {
+      setExportingPdf(false);
+    }
+  };
+
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'bottom']}>
       <View style={styles.header}>
@@ -140,7 +207,18 @@ export default function DragonWeightScreen() {
           <Ionicons name="close" size={24} color={COLORS.textPrimary} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>{name || 'Dragon'} - {t('weight.headerSuffix')}</Text>
-        <View style={{ width: 40 }} />
+        <TouchableOpacity
+          onPress={handleExportPdf}
+          disabled={exportingPdf || loading}
+          testID="weight-export-pdf-button"
+          style={styles.exportBtn}
+        >
+          {exportingPdf ? (
+            <ActivityIndicator color={COLORS.primaryDark} size="small" />
+          ) : (
+            <Ionicons name="share-outline" size={22} color={COLORS.primaryDark} />
+          )}
+        </TouchableOpacity>
       </View>
 
       {loading ? (
@@ -304,6 +382,12 @@ const styles = StyleSheet.create({
     paddingBottom: 4,
   },
   closeBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  exportBtn: {
     width: 40,
     height: 40,
     alignItems: 'center',
