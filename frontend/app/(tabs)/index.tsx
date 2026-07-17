@@ -23,7 +23,7 @@ import PageBanner from '@/components/PageBanner';
 import type { DailyOverview } from '@/types';
 
 const COLUMNS_HORIZONTAL_PADDING = 20;
-const COLUMNS_GAP = 16;
+const COLUMNS_GAP = 20;
 
 export default function DagsoversigtScreen() {
   const router = useRouter();
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   columnsWrapper: {
     paddingHorizontal: 20,
-    gap: 16,
+    gap: 20,
     paddingBottom: 20,
   },
   centerBox: {
