@@ -165,7 +165,7 @@ class AppSettings(BaseDocument):
     heading_color: Optional[str] = None
     app_bg_color: Optional[str] = None
     page_title_color: Optional[str] = None
-    language: AppLanguage = "en"
+    language: Optional[AppLanguage] = None
     weight_unit: WeightUnitPref = "g"
     time_format: TimeFormatPref = "12h"
     light_summer_start: str = "03-01"

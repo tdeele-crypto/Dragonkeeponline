@@ -1,6 +1,19 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import * as Localization from 'expo-localization';
 import { api } from '@/utils/api';
 import { t as translate, type Language, type WeightUnit, type TimeFormat } from '@/i18n/translations';
+
+/** Detect a sensible default language from the device/system locale.
+ * Falls back to English for any locale that isn't Danish. */
+function detectDeviceLanguage(): Language {
+  try {
+    const locales = Localization.getLocales();
+    const code = locales?.[0]?.languageCode?.toLowerCase();
+    return code === 'da' ? 'da' : 'en';
+  } catch {
+    return 'en';
+  }
+}
 
 interface AdminSettingsValue {
   bannerImage: string | null;
@@ -27,7 +40,7 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
   const [headingColor, setHeadingColor] = useState<string | null>(null);
   const [appBgColor, setAppBgColor] = useState<string | null>(null);
   const [pageTitleColor, setPageTitleColor] = useState<string | null>(null);
-  const [language, setLanguage] = useState<Language>('en');
+  const [language, setLanguage] = useState<Language>(detectDeviceLanguage);
   const [weightUnit, setWeightUnit] = useState<WeightUnit>('g');
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('12h');
   const [lightSummerStart, setLightSummerStart] = useState('03-01');
@@ -42,11 +55,22 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
       setHeadingColor(data.heading_color || null);
       setAppBgColor(data.app_bg_color || null);
       setPageTitleColor(data.page_title_color || null);
-      setLanguage((data.language as Language) || 'en');
       setWeightUnit((data.weight_unit as WeightUnit) || 'g');
       setTimeFormat((data.time_format as TimeFormat) || '12h');
       setLightSummerStart(data.light_summer_start || '03-01');
       setLightWinterStart(data.light_winter_start || '09-01');
+
+      if (data.language === 'en' || data.language === 'da') {
+        // Language was already explicitly chosen before (either by the user
+        // or a previous auto-detection) - always respect that stored value.
+        setLanguage(data.language);
+      } else {
+        // First run: no language preference stored yet - use the device's
+        // system language, then persist it so it only auto-detects once.
+        const detected = detectDeviceLanguage();
+        setLanguage(detected);
+        api.put('/admin/settings', { language: detected }).catch(() => {});
+      }
     } catch (e) {
       // Settings are optional decoration/preferences - fail silently.
       console.log('Could not load admin settings:', e);

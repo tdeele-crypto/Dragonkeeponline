@@ -36,8 +36,9 @@ def original_settings(api_client):
 
 class TestLanguageSettingsDefaults:
     def test_get_settings_has_default_lang_fields(self, api_client, original_settings):
-        # Should always have these 3 keys present with valid values (defaults or previously set)
-        assert original_settings.get("language") in ("en", "da")
+        # language may be None on a truly fresh install (before first-run device-locale
+        # auto-detection persists an explicit value) - otherwise "en" or "da".
+        assert original_settings.get("language") in ("en", "da", None)
         assert original_settings.get("weight_unit") in ("g", "oz")
         assert original_settings.get("time_format") in ("12h", "24h")
 
