@@ -102,43 +102,46 @@ export default function DragonsScreen() {
             const ageLabel = getAgeLabel(dragon.age_category, language);
             return (
               <View key={dragon.id} style={styles.card} testID={`dragon-card-${dragon.id}`}>
-                <DragonAvatar photoBase64={dragon.photo_base64} size={60} />
-                <View style={styles.cardInfo}>
-                  <View style={styles.cardNameRow}>
-                    <Text style={styles.cardName} numberOfLines={2} testID={`dragon-card-name-${dragon.id}`}>
-                      {dragon.name}
-                    </Text>
+                <View style={styles.cardNameRow}>
+                  <Text style={styles.cardName} testID={`dragon-card-name-${dragon.id}`}>
+                    {dragon.name}
+                  </Text>
+                  <View style={styles.cardNameActions}>
                     <TouchableOpacity
-                      style={styles.editIconBtn}
+                      style={styles.iconBtn}
                       onPress={() => router.push({ pathname: '/dragon-form', params: { id: dragon.id } })}
                       testID={`dragon-edit-button-${dragon.id}`}
                     >
                       <Ionicons name="create-outline" size={18} color={COLORS.textSecondary} />
                     </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.iconBtn}
+                      onPress={() => handleDelete(dragon)}
+                      testID={`dragon-delete-button-${dragon.id}`}
+                    >
+                      <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
+                    </TouchableOpacity>
                   </View>
-                  <Text style={styles.cardMeta}>{getGenderLabel(dragon.gender, language)} · {dragon.color} · {dragon.morph}</Text>
-                  <View style={styles.ageBadge}>
-                    <Text style={styles.ageBadgeText}>{ageLabel}</Text>
-                  </View>
-                  <TouchableOpacity
-                    style={styles.weightCareplanBtn}
-                    onPress={() =>
-                      router.push({ pathname: '/dragon-weight', params: { id: dragon.id, name: dragon.name } })
-                    }
-                    testID={`dragon-weight-button-${dragon.id}`}
-                  >
-                    <Ionicons name="scale-outline" size={15} color={COLORS.primaryDark} />
-                    <Text style={styles.weightCareplanBtnText}>{t('dragons.weightCareplanButton')}</Text>
-                  </TouchableOpacity>
                 </View>
-                <View style={styles.cardActions}>
-                  <TouchableOpacity
-                    style={styles.iconBtn}
-                    onPress={() => handleDelete(dragon)}
-                    testID={`dragon-delete-button-${dragon.id}`}
-                  >
-                    <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
-                  </TouchableOpacity>
+
+                <View style={styles.cardBody}>
+                  <DragonAvatar photoBase64={dragon.photo_base64} size={60} />
+                  <View style={styles.cardInfo}>
+                    <Text style={styles.cardMeta}>{getGenderLabel(dragon.gender, language)} · {dragon.color} · {dragon.morph}</Text>
+                    <View style={styles.ageBadge}>
+                      <Text style={styles.ageBadgeText}>{ageLabel}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.weightCareplanBtn}
+                      onPress={() =>
+                        router.push({ pathname: '/dragon-weight', params: { id: dragon.id, name: dragon.name } })
+                      }
+                      testID={`dragon-weight-button-${dragon.id}`}
+                    >
+                      <Ionicons name="scale-outline" size={15} color={COLORS.primaryDark} />
+                      <Text style={styles.weightCareplanBtnText}>{t('dragons.weightCareplanButton')}</Text>
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             );
@@ -186,14 +189,17 @@ const styles = StyleSheet.create({
     gap: 12,
   },
   card: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    gap: 14,
     backgroundColor: COLORS.white,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: COLORS.border,
     padding: 14,
+    gap: 10,
+  },
+  cardBody: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 14,
   },
   cardInfo: {
     flex: 1,
@@ -205,19 +211,19 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     gap: 6,
   },
-  editIconBtn: {
-    width: 32,
-    height: 32,
-    marginTop: -4,
-    alignItems: 'center',
-    justifyContent: 'center',
+  cardNameActions: {
+    flexDirection: 'row',
+    gap: 2,
+    marginTop: -6,
+    marginRight: -6,
   },
   cardName: {
-    fontSize: 16,
+    fontSize: 17,
     fontWeight: '800',
     color: COLORS.textPrimary,
-    lineHeight: 20,
+    lineHeight: 22,
     flex: 1,
+    flexWrap: 'wrap',
   },
   cardMeta: {
     fontSize: 12,
@@ -254,13 +260,9 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: COLORS.primaryDark,
   },
-  cardActions: {
-    flexDirection: 'row',
-    gap: 4,
-  },
   iconBtn: {
-    width: 40,
-    height: 40,
+    width: 36,
+    height: 36,
     alignItems: 'center',
     justifyContent: 'center',
   },

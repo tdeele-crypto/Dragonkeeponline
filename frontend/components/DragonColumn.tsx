@@ -47,16 +47,17 @@ export default function DragonColumn({ dragon, width, onToggleTask, onActivityCh
 
   return (
     <View style={[styles.column, { width }]} testID={`dragon-column-${dragon.dragon_id}`}>
+      <Text
+        style={[styles.name, pageTitleColor ? { color: pageTitleColor } : null]}
+        numberOfLines={2}
+        testID={`dragon-column-name-${dragon.dragon_id}`}
+      >
+        {dragon.name}
+      </Text>
+
       <View style={styles.header}>
-        <DragonAvatar photoBase64={dragon.photo_base64} size={52} />
-        <View style={styles.headerText}>
-          <Text
-            style={[styles.name, pageTitleColor ? { color: pageTitleColor } : null]}
-            numberOfLines={1}
-            testID={`dragon-column-name-${dragon.dragon_id}`}
-          >
-            {dragon.name}
-          </Text>
+        <View style={styles.headerLeft}>
+          <DragonAvatar photoBase64={dragon.photo_base64} size={52} />
           <View style={styles.ageBadge}>
             <Text style={styles.ageText}>{ageLabel}</Text>
           </View>
@@ -123,12 +124,15 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     gap: 10,
     marginBottom: 10,
   },
-  headerText: {
+  headerLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
     flex: 1,
-    gap: 4,
   },
   activityToggle: {
     flexDirection: 'row',
@@ -144,6 +148,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: COLORS.textPrimary,
+    marginBottom: 8,
   },
   ageBadge: {
     backgroundColor: COLORS.primaryLight,
