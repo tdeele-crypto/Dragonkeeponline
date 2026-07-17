@@ -49,7 +49,7 @@ export default function DragonColumn({ dragon, width, onToggleTask, onActivityCh
     <View style={[styles.column, { width }]} testID={`dragon-column-${dragon.dragon_id}`}>
       <Text
         style={[styles.name, pageTitleColor ? { color: pageTitleColor } : null]}
-        numberOfLines={2}
+        numberOfLines={3}
         testID={`dragon-column-name-${dragon.dragon_id}`}
       >
         {dragon.name}
