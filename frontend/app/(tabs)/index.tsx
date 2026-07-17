@@ -132,7 +132,10 @@ export default function DagsoversigtScreen() {
             {formatFullDate(date, language)}
           </Text>
           <TouchableOpacity
-            style={styles.calendarBtn}
+            style={[
+              styles.calendarBtn,
+              appBgColor ? { backgroundColor: appBgColor, borderWidth: 1, borderColor: COLORS.border } : null,
+            ]}
             onPress={() => setCalendarVisible(true)}
             testID="overview-calendar-button"
             accessibilityLabel={t('overview.calendarButton')}
