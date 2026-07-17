@@ -41,6 +41,7 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'dragons.deleteSuccess': 'Agame slettet',
     'dragons.deleteError': 'Kunne ikke slette agame',
     'dragons.emptyText': 'Ingen agamer tilføjet endnu',
+    'dragons.weightCareplanButton': 'Vægt og plejeplan',
 
     'tasks.title': 'Opgaver',
     'tasks.tabTider': 'Tider',
@@ -270,6 +271,13 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'overview.brumationToastOn': '{{name}} er nu i dvale - fodring skjules indtil aktiveret igen',
     'overview.brumationToastOff': '{{name}} er aktiv igen - fodring vises som normalt',
     'overview.activityUpdateError': 'Kunne ikke opdatere status',
+    'overview.calendarButton': 'Vælg dato i kalender',
+    'overview.calendarTitle': 'Vælg dato',
+    'overview.calendarFetchError': 'Kunne ikke indlæse kalenderdata',
+    'overview.calendarLegendDone': 'Fuldført',
+    'overview.calendarLegendPartial': 'Delvist',
+    'overview.calendarLegendNone': 'Intet registreret',
+    'overview.calendarToday': 'I dag',
 
     'taskRow.automatic': 'Automatisk',
   },
@@ -308,6 +316,7 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'dragons.deleteSuccess': 'Dragon deleted',
     'dragons.deleteError': 'Could not delete dragon',
     'dragons.emptyText': 'No dragons added yet',
+    'dragons.weightCareplanButton': 'Weight and care plan',
 
     'tasks.title': 'Tasks',
     'tasks.tabTider': 'Times',
@@ -537,6 +546,13 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'overview.brumationToastOn': '{{name}} is now in brumation - feeding is hidden until reactivated',
     'overview.brumationToastOff': '{{name}} is active again - feeding shows as normal',
     'overview.activityUpdateError': 'Could not update status',
+    'overview.calendarButton': 'Pick a date on the calendar',
+    'overview.calendarTitle': 'Select date',
+    'overview.calendarFetchError': 'Could not load calendar data',
+    'overview.calendarLegendDone': 'Completed',
+    'overview.calendarLegendPartial': 'Partial',
+    'overview.calendarLegendNone': 'Nothing logged',
+    'overview.calendarToday': 'Today',
 
     'taskRow.automatic': 'Automatic',
   },
@@ -744,6 +760,10 @@ export function formatFullDate(d: Date, lang: Language): string {
 
 export function formatDateLabel(d: Date, lang: Language): string {
   return `${d.getDate()}. ${MONTH_NAMES[lang][d.getMonth()]} ${d.getFullYear()}`;
+}
+
+export function getMonthYearLabel(d: Date, lang: Language): string {
+  return `${MONTH_NAMES[lang][d.getMonth()]} ${d.getFullYear()}`;
 }
 
 export function formatDateShort(d: Date): string {

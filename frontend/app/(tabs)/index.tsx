@@ -20,6 +20,7 @@ import { useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import DragonColumn from '@/components/DragonColumn';
 import PageBanner from '@/components/PageBanner';
+import OverviewCalendarModal from '@/components/OverviewCalendarModal';
 import type { DailyOverview } from '@/types';
 
 const COLUMNS_HORIZONTAL_PADDING = 20;
@@ -37,6 +38,7 @@ export default function DagsoversigtScreen() {
   const [overview, setOverview] = useState<DailyOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [calendarVisible, setCalendarVisible] = useState(false);
 
   const fetchOverview = useCallback(async (d: Date, showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -73,6 +75,11 @@ export default function DagsoversigtScreen() {
   };
 
   const goToday = () => setDate(new Date());
+
+  const handleSelectCalendarDate = (d: Date) => {
+    setDate(d);
+    setCalendarVisible(false);
+  };
 
   const toggleTask = async (dragonId: string, slotId: string) => {
     if (!overview) return;
@@ -118,9 +125,19 @@ export default function DagsoversigtScreen() {
         <TouchableOpacity style={styles.navBtn} onPress={() => changeDay(-1)} testID="overview-prev-day-button">
           <Ionicons name="chevron-back" size={22} color={pageTitleColor || COLORS.textPrimary} />
         </TouchableOpacity>
-        <Text style={[styles.navLabel, pageTitleColor ? { color: pageTitleColor } : null]}>
-          {formatFullDate(date, language)}
-        </Text>
+        <View style={styles.dateNavCenter}>
+          <Text style={[styles.navLabel, pageTitleColor ? { color: pageTitleColor } : null]}>
+            {formatFullDate(date, language)}
+          </Text>
+          <TouchableOpacity
+            style={styles.calendarBtn}
+            onPress={() => setCalendarVisible(true)}
+            testID="overview-calendar-button"
+            accessibilityLabel={t('overview.calendarButton')}
+          >
+            <Ionicons name="calendar-outline" size={18} color={pageTitleColor || COLORS.primary} />
+          </TouchableOpacity>
+        </View>
         <TouchableOpacity style={styles.navBtn} onPress={() => changeDay(1)} testID="overview-next-day-button">
           <Ionicons name="chevron-forward" size={22} color={pageTitleColor || COLORS.textPrimary} />
         </TouchableOpacity>
@@ -175,6 +192,13 @@ export default function DagsoversigtScreen() {
           ))}
         </ScrollView>
       )}
+
+      <OverviewCalendarModal
+        visible={calendarVisible}
+        selectedDate={date}
+        onClose={() => setCalendarVisible(false)}
+        onSelectDate={handleSelectCalendarDate}
+      />
     </SafeAreaView>
   );
 }
@@ -223,12 +247,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   navLabel: {
-    flex: 1,
     textAlign: 'center',
     fontSize: 15,
     fontWeight: '700',
     color: COLORS.textSecondary,
     textTransform: 'capitalize',
+  },
+  dateNavCenter: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+  },
+  calendarBtn: {
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: COLORS.primaryLight,
   },
   winterBadge: {
     flexDirection: 'row',

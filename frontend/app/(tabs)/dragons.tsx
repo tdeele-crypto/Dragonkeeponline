@@ -120,17 +120,18 @@ export default function DragonsScreen() {
                   <View style={styles.ageBadge}>
                     <Text style={styles.ageBadgeText}>{ageLabel}</Text>
                   </View>
-                </View>
-                <View style={styles.cardActions}>
                   <TouchableOpacity
-                    style={styles.iconBtn}
+                    style={styles.weightCareplanBtn}
                     onPress={() =>
                       router.push({ pathname: '/dragon-weight', params: { id: dragon.id, name: dragon.name } })
                     }
                     testID={`dragon-weight-button-${dragon.id}`}
                   >
-                    <Ionicons name="scale-outline" size={20} color={COLORS.textSecondary} />
+                    <Ionicons name="scale-outline" size={15} color={COLORS.primaryDark} />
+                    <Text style={styles.weightCareplanBtnText}>{t('dragons.weightCareplanButton')}</Text>
                   </TouchableOpacity>
+                </View>
+                <View style={styles.cardActions}>
                   <TouchableOpacity
                     style={styles.iconBtn}
                     onPress={() => handleDelete(dragon)}
@@ -186,7 +187,7 @@ const styles = StyleSheet.create({
   },
   card: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     gap: 14,
     backgroundColor: COLORS.white,
     borderRadius: 20,
@@ -230,6 +231,24 @@ const styles = StyleSheet.create({
   },
   ageBadgeText: {
     fontSize: 11,
+    fontWeight: '700',
+    color: COLORS.primaryDark,
+  },
+  weightCareplanBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    alignSelf: 'flex-start',
+    backgroundColor: COLORS.background,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    borderRadius: 999,
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    marginTop: 8,
+  },
+  weightCareplanBtnText: {
+    fontSize: 12,
     fontWeight: '700',
     color: COLORS.primaryDark,
   },

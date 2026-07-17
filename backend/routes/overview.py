@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from datetime import date as date_cls, datetime, UTC
+import calendar as calendar_module
 from database import db
 from models import CompletionToggle, Completion, compute_age_category
 from services.season import is_in_winter_period, apply_winter_times
@@ -78,6 +79,76 @@ async def get_daily_overview(date: str = Query(...)):
         })
 
     return {"date": date, "day_of_week": day_of_week, "is_winter_period": in_winter, "dragons": result}
+
+
+@router.get("/completions/calendar-summary")
+async def get_calendar_summary(year: int = Query(...), month: int = Query(..., ge=1, le=12)):
+    """Per-day completion status for a whole month, used by the Daily
+    Overview's calendar date-picker:
+    - 'green'  = every scheduled task that day is done (completed or automatic)
+    - 'yellow' = some but not all tasks are done
+    - 'red'    = no tasks are done yet
+    - 'none'   = no tasks were scheduled that day at all (edge case)
+    """
+    days_in_month = calendar_module.monthrange(year, month)[1]
+
+    dragons = await db.dragons.find().to_list(1000)
+    dragon_info = [
+        {
+            "id": str(d["_id"]),
+            "age_category": compute_age_category(d["birthday"]),
+            "activity_state": d.get("activity_state", "active"),
+        }
+        for d in dragons
+    ]
+
+    slots_cache: dict = {}
+
+    async def get_slots(day_of_week: str, age_category: str, activity_state: str):
+        key = (day_of_week, age_category, activity_state)
+        if key not in slots_cache:
+            query = {"age_category": age_category, "day_of_week": day_of_week}
+            if activity_state == "brumation":
+                query["category"] = {"$ne": "fodring"}
+            slots_cache[key] = await db.schedule_slots.find(query).to_list(1000)
+        return slots_cache[key]
+
+    days_result = []
+    for day_num in range(1, days_in_month + 1):
+        d_obj = date_cls(year, month, day_num)
+        date_str = d_obj.isoformat()
+        day_of_week = DAY_NAMES[d_obj.weekday()]
+
+        dragon_slots: dict = {}
+        total = 0
+        for info in dragon_info:
+            slots = await get_slots(day_of_week, info["age_category"], info["activity_state"])
+            dragon_slots[info["id"]] = slots
+            total += len(slots)
+
+        if total == 0:
+            days_result.append({"date": date_str, "status": "none", "total": 0, "completed": 0})
+            continue
+
+        completions = await db.completions.find({"date": date_str}).to_list(1000)
+        completion_map = {(c["dragon_id"], c["schedule_slot_id"]): c["completed"] for c in completions}
+
+        completed = 0
+        for info in dragon_info:
+            for slot in dragon_slots[info["id"]]:
+                slot_id = str(slot["_id"])
+                if slot.get("is_automatic") or completion_map.get((info["id"], slot_id)):
+                    completed += 1
+
+        if completed == 0:
+            status = "red"
+        elif completed >= total:
+            status = "green"
+        else:
+            status = "yellow"
+        days_result.append({"date": date_str, "status": status, "total": total, "completed": completed})
+
+    return {"year": year, "month": month, "days": days_result}
 
 
 @router.post("/completions/toggle")
