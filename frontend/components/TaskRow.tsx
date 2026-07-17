@@ -36,7 +36,7 @@ export default function TaskRow({ task, onToggle, testID }: TaskRowProps) {
           )}
         </View>
         {itemsLabel && (
-          <Text style={[styles.itemsText, { color: palette.text }]} numberOfLines={2}>
+          <Text style={[styles.itemsText, { color: palette.text }]} numberOfLines={3}>
             {itemsLabel}
           </Text>
         )}
