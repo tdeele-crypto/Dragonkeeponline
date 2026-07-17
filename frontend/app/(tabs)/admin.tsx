@@ -262,6 +262,10 @@ export default function AdminScreen() {
   };
 
   const handleExport = async () => {
+    if (Platform.OS === 'web') {
+      showToast(t('admin.webUnsupported'), 'error');
+      return;
+    }
     setExporting(true);
     try {
       const data = await api.get('/admin/export');
@@ -284,6 +288,10 @@ export default function AdminScreen() {
   };
 
   const handleImport = async () => {
+    if (Platform.OS === 'web') {
+      showToast(t('admin.webUnsupported'), 'error');
+      return;
+    }
     try {
       const result = await DocumentPicker.getDocumentAsync({
         type: 'application/json',
