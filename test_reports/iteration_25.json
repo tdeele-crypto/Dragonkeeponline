@@ -1,0 +1,23 @@
+{
+  "summary": "Re-ran EXACT reproduction from iteration_24 to verify the onScroll fix for the react-native-web ScrollView bug. FIX CONFIRMED WORKING: performed page.mouse.wheel(355, 0) on 'overview-columns-scroll', scrollLeft moved 0->355 landing on logan's column, and re-opening the calendar via 'overview-calendar-button' NOW correctly shows 'logan' subtitle with 2026-07-16 marked RED (0/4 tasks done). Scrolled back with page.mouse.wheel(-355, 0), scrollLeft returned to 0, and calendar correctly reverted to 'Sif' subtitle with 2026-07-16 marked GREEN. Bidirectional tracking confirmed working. Regression check: checkbox toggle on Sif's 08:30 task worked correctly (2 af 5 -> 3 af 5 -> back to 2 af 5, verified with checkmark icon appearing/disappearing), and initial scroll position was a clean 0 (no partial/glitchy snap). No completion data was left modified - toggled task was reverted immediately after verification.",
+  "backend_issues": {"critical": [], "minor": []},
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [],
+  "critical_code_review_comments": [
+    "The onScroll handler in app/(tabs)/index.tsx uses a functional setState update (setActiveDragonIndex((prev) => prev === clamped ? prev : clamped)) which correctly avoids unnecessary re-renders when the index hasn't changed - good practice, confirmed no visual jank during scroll.",
+    "onMomentumScrollEnd/onScrollEndDrag handlers are now redundant on web (dead code per react-native-web) but harmless since they still work correctly on native platforms - acceptable to leave for cross-platform parity."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "N/A - not tested this iteration (frontend only per request)", "frontend": "100% - bug fix confirmed working, no regressions found"},
+  "seed_data_creation": "None. Sif's 2026-07-16 confirmed still 3/3 completed=true (green), logan's confirmed still 0/4 completed=true (red). A task checkbox toggle on Sif's 08:30 slot was performed for regression testing and immediately reverted back to original state.",
+  "retest_needed": false,
+  "should_main_agent_self_test": true,
+  "context_for_next_testing_agent": "The onScroll-based activeDragonIndex fix (from iteration_24's root-cause finding) is verified working end-to-end: bidirectional scroll tracking (Sif<->logan), calendar modal correctly reflects the active dragon's completion status/color, and checkbox toggling + swipe snapping regression checks passed with no glitches. No further action needed on this specific bug.",
+  "rca_of_issue": "N/A - this iteration verifies the fix, not a new bug. See iteration_24 for original RCA (react-native-web ScrollViewBase never invokes onMomentumScrollEnd/onScrollEndDrag, only onScroll). Fix applied: added onScroll with scrollEventThrottle={16} that computes/sets activeDragonIndex from contentOffset.x, working correctly cross-platform."
+}

@@ -182,6 +182,12 @@ export default function DagsoversigtScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.columnsWrapper}
           testID="overview-columns-scroll"
+          scrollEventThrottle={16}
+          onScroll={(e) => {
+            const idx = Math.round(e.nativeEvent.contentOffset.x / (columnWidth + COLUMNS_GAP));
+            const clamped = Math.max(0, Math.min(idx, overview.dragons.length - 1));
+            setActiveDragonIndex((prev) => (prev === clamped ? prev : clamped));
+          }}
           onMomentumScrollEnd={(e) => {
             const idx = Math.round(e.nativeEvent.contentOffset.x / (columnWidth + COLUMNS_GAP));
             setActiveDragonIndex(Math.max(0, Math.min(idx, overview.dragons.length - 1)));
