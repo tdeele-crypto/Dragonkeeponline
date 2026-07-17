@@ -1,5 +1,6 @@
 from fastapi import APIRouter, HTTPException, Query
 from datetime import date as date_cls, datetime, UTC
+from typing import Optional
 import calendar as calendar_module
 from database import db
 from models import CompletionToggle, Completion, compute_age_category
@@ -82,17 +83,26 @@ async def get_daily_overview(date: str = Query(...)):
 
 
 @router.get("/completions/calendar-summary")
-async def get_calendar_summary(year: int = Query(...), month: int = Query(..., ge=1, le=12)):
+async def get_calendar_summary(
+    year: int = Query(...),
+    month: int = Query(..., ge=1, le=12),
+    dragon_id: Optional[str] = Query(None),
+):
     """Per-day completion status for a whole month, used by the Daily
-    Overview's calendar date-picker:
-    - 'green'  = every scheduled task that day is done (completed or automatic)
+    Overview's calendar date-picker. If dragon_id is given, status reflects
+    only that dragon's tasks - otherwise it's aggregated across all dragons:
+    - 'green'  = every manually-registrable task that day is done
     - 'yellow' = some but not all tasks are done
     - 'red'    = no tasks are done yet
-    - 'none'   = no tasks were scheduled that day at all (edge case)
+    - 'none'   = no manually-registrable tasks were scheduled that day (edge case)
+    Automatic (equipment) tasks like UVB/heat lamps are excluded from the
+    count - they run on their own and aren't something the user 'registers'.
     """
     days_in_month = calendar_module.monthrange(year, month)[1]
 
     dragons = await db.dragons.find().to_list(1000)
+    if dragon_id:
+        dragons = [d for d in dragons if str(d["_id"]) == dragon_id]
     dragon_info = [
         {
             "id": str(d["_id"]),

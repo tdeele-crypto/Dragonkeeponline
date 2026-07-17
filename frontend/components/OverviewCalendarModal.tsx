@@ -12,6 +12,8 @@ type DayStatus = 'green' | 'yellow' | 'red' | 'none';
 interface OverviewCalendarModalProps {
   visible: boolean;
   selectedDate: Date;
+  dragonId?: string;
+  dragonName?: string;
   onClose: () => void;
   onSelectDate: (date: Date) => void;
 }
@@ -34,6 +36,8 @@ const STATUS_COLORS: Record<DayStatus, string> = {
 export default function OverviewCalendarModal({
   visible,
   selectedDate,
+  dragonId,
+  dragonName,
   onClose,
   onSelectDate,
 }: OverviewCalendarModalProps) {
@@ -50,8 +54,9 @@ export default function OverviewCalendarModal({
     if (!visible) return;
     let cancelled = false;
     setLoading(true);
+    const dragonParam = dragonId ? `&dragon_id=${encodeURIComponent(dragonId)}` : '';
     api
-      .get(`/completions/calendar-summary?year=${viewMonth.getFullYear()}&month=${viewMonth.getMonth() + 1}`)
+      .get(`/completions/calendar-summary?year=${viewMonth.getFullYear()}&month=${viewMonth.getMonth() + 1}${dragonParam}`)
       .then((data) => {
         if (cancelled) return;
         const map: Record<string, DayStatus> = {};
@@ -69,7 +74,7 @@ export default function OverviewCalendarModal({
     return () => {
       cancelled = true;
     };
-  }, [visible, viewMonth]);
+  }, [visible, viewMonth, dragonId]);
 
   const today = useMemo(() => new Date(), []);
 
@@ -101,7 +106,14 @@ export default function OverviewCalendarModal({
         <View style={styles.sheet} testID="overview-calendar-modal">
           <View style={styles.handle} />
           <View style={styles.header}>
-            <Text style={styles.title}>{t('overview.calendarTitle')}</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.title}>{t('overview.calendarTitle')}</Text>
+              {!!dragonName && (
+                <Text style={styles.subtitle} testID="overview-calendar-dragon-name">
+                  {dragonName}
+                </Text>
+              )}
+            </View>
             <TouchableOpacity onPress={onClose} testID="overview-calendar-close-button" style={styles.closeBtn}>
               <Ionicons name="close" size={22} color={COLORS.textSecondary} />
             </TouchableOpacity>
@@ -241,6 +253,12 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '800',
     color: COLORS.textPrimary,
+  },
+  subtitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   closeBtn: {
     width: 32,

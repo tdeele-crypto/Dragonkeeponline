@@ -39,12 +39,14 @@ export default function DagsoversigtScreen() {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [calendarVisible, setCalendarVisible] = useState(false);
+  const [activeDragonIndex, setActiveDragonIndex] = useState(0);
 
   const fetchOverview = useCallback(async (d: Date, showSpinner = true) => {
     if (showSpinner) setLoading(true);
     try {
       const data = await api.get(`/daily-overview?date=${formatDateISO(d)}`);
       setOverview(data);
+      setActiveDragonIndex(0);
     } catch (e: any) {
       showToast(e.message || t('overview.fetchError'), 'error');
     } finally {
@@ -180,6 +182,10 @@ export default function DagsoversigtScreen() {
           showsHorizontalScrollIndicator={false}
           contentContainerStyle={styles.columnsWrapper}
           testID="overview-columns-scroll"
+          onMomentumScrollEnd={(e) => {
+            const idx = Math.round(e.nativeEvent.contentOffset.x / (columnWidth + COLUMNS_GAP));
+            setActiveDragonIndex(Math.max(0, Math.min(idx, overview.dragons.length - 1)));
+          }}
         >
           {overview.dragons.map((dragon) => (
             <DragonColumn
@@ -196,6 +202,8 @@ export default function DagsoversigtScreen() {
       <OverviewCalendarModal
         visible={calendarVisible}
         selectedDate={date}
+        dragonId={overview?.dragons[activeDragonIndex]?.dragon_id}
+        dragonName={overview?.dragons[activeDragonIndex]?.name}
         onClose={() => setCalendarVisible(false)}
         onSelectDate={handleSelectCalendarDate}
       />
