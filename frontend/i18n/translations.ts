@@ -41,7 +41,7 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'dragons.deleteSuccess': 'Agame slettet',
     'dragons.deleteError': 'Kunne ikke slette agame',
     'dragons.emptyText': 'Ingen agamer tilføjet endnu',
-    'dragons.weightCareplanButton': 'Vægt og plejeplan',
+    'dragons.weightCareplanButton': 'Vægt',
 
     'tasks.title': 'Opgaver',
     'tasks.tabTider': 'Tider',
@@ -316,7 +316,7 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'dragons.deleteSuccess': 'Dragon deleted',
     'dragons.deleteError': 'Could not delete dragon',
     'dragons.emptyText': 'No dragons added yet',
-    'dragons.weightCareplanButton': 'Weight and care plan',
+    'dragons.weightCareplanButton': 'Weight',
 
     'tasks.title': 'Tasks',
     'tasks.tabTider': 'Times',
