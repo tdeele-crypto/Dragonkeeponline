@@ -274,6 +274,13 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'admin.seasonUpdateError': 'Kunne ikke opdatere sæsonindstilling',
     'admin.seasonWinterBadge': 'Vinterperiode - vintertider aktive',
 
+    'admin.helpSectionTitle': 'Hjælp & FAQ',
+    'admin.helpSectionSubtitle':
+      'Find svar på almindelige spørgsmål, eller download en komplet PDF-vejledning til hele appen.',
+    'admin.helpFaqButton': 'Åbn FAQ / Hjælp',
+    'admin.helpPdfButton': 'Download PDF vejledning',
+    'admin.helpPdfError': 'Kunne ikke oprette PDF-vejledning',
+
     'copyToDays.title': 'Kopier til dage & perioder',
     'copyToDays.subtitle':
       'Opgaven oprettes automatisk for alle valgte dage og perioder. Den nuværende dag og periode er altid inkluderet.',
@@ -568,6 +575,13 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'admin.seasonUpdateSuccess': 'Season setting updated',
     'admin.seasonUpdateError': 'Could not update season setting',
     'admin.seasonWinterBadge': 'Winter period - winter times active',
+
+    'admin.helpSectionTitle': 'Help & FAQ',
+    'admin.helpSectionSubtitle':
+      'Find answers to common questions, or download a complete PDF guide for the whole app.',
+    'admin.helpFaqButton': 'Open FAQ / Help',
+    'admin.helpPdfButton': 'Download PDF guide',
+    'admin.helpPdfError': 'Could not generate PDF guide',
 
     'copyToDays.title': 'Copy to days & periods',
     'copyToDays.subtitle':

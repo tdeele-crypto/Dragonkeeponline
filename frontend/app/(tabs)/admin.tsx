@@ -13,9 +13,11 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
+import * as Print from 'expo-print';
 import { File, Paths } from 'expo-file-system';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '@/constants/colors';
@@ -26,6 +28,7 @@ import { useAdminSettings } from '@/context/AdminSettingsContext';
 import type { Language, WeightUnit, TimeFormat } from '@/i18n/translations';
 import PageBanner from '@/components/PageBanner';
 import PickerField from '@/components/PickerField';
+import { buildGuidePdfHtml } from '@/utils/guidePdf';
 
 function monthDayToDate(mmdd: string): Date {
   const [m, d] = (mmdd || '03-01').split('-').map((n) => parseInt(n, 10));
@@ -63,6 +66,7 @@ const SWATCH_COLORS = [
 export default function AdminScreen() {
   const showToast = useToast();
   const showConfirm = useConfirm();
+  const router = useRouter();
   const {
     bannerImage,
     bannerText,
@@ -86,6 +90,7 @@ export default function AdminScreen() {
   const [savingBanner, setSavingBanner] = useState(false);
   const [exporting, setExporting] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [generatingGuide, setGeneratingGuide] = useState(false);
 
   const [localAppBgColor, setLocalAppBgColor] = useState<string | null>(null);
   const [localPageTitleColor, setLocalPageTitleColor] = useState<string | null>(null);
@@ -332,6 +337,31 @@ export default function AdminScreen() {
     }
   };
 
+  const handleDownloadGuide = async () => {
+    if (Platform.OS === 'web') {
+      showToast(t('admin.webUnsupported'), 'error');
+      return;
+    }
+    setGeneratingGuide(true);
+    try {
+      const lang = language === 'da' ? 'da' : 'en';
+      const html = buildGuidePdfHtml(lang);
+      const { uri } = await Print.printToFileAsync({ html, base64: false });
+      const canShare = await Sharing.isAvailableAsync();
+      if (canShare) {
+        await Sharing.shareAsync(uri, {
+          mimeType: 'application/pdf',
+          UTI: 'com.adobe.pdf',
+          dialogTitle: t('admin.helpPdfButton'),
+        });
+      }
+    } catch (e: any) {
+      showToast(e.message || t('admin.helpPdfError'), 'error');
+    } finally {
+      setGeneratingGuide(false);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
@@ -340,6 +370,36 @@ export default function AdminScreen() {
       </View>
 
       <ScrollView contentContainerStyle={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('admin.helpSectionTitle')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('admin.helpSectionSubtitle')}</Text>
+
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.exportBtn]}
+            onPress={() => router.push('/help')}
+            testID="admin-help-faq-button"
+          >
+            <Ionicons name="help-circle-outline" size={18} color={COLORS.white} />
+            <Text style={styles.actionBtnText}>{t('admin.helpFaqButton')}</Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.importBtn]}
+            onPress={handleDownloadGuide}
+            disabled={generatingGuide}
+            testID="admin-help-pdf-button"
+          >
+            {generatingGuide ? (
+              <ActivityIndicator color={COLORS.primary} />
+            ) : (
+              <>
+                <Ionicons name="document-text-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.importBtnText}>{t('admin.helpPdfButton')}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+        </View>
+
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>{t('admin.seasonSectionTitle')}</Text>
           <Text style={styles.sectionSubtitle}>{t('admin.seasonSectionSubtitle')}</Text>
@@ -363,45 +423,6 @@ export default function AdminScreen() {
           {savingSeason && (
             <ActivityIndicator color={COLORS.primary} size="small" testID="admin-season-saving-indicator" />
           )}
-        </View>
-
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('admin.dbSectionTitle')}</Text>
-          <Text style={styles.sectionSubtitle}>
-            {t('admin.dbSectionSubtitle')}
-          </Text>
-
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.exportBtn]}
-            onPress={handleExport}
-            disabled={exporting}
-            testID="admin-export-button"
-          >
-            {exporting ? (
-              <ActivityIndicator color={COLORS.white} />
-            ) : (
-              <>
-                <Ionicons name="download-outline" size={18} color={COLORS.white} />
-                <Text style={styles.actionBtnText}>{t('admin.exportButton')}</Text>
-              </>
-            )}
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={[styles.actionBtn, styles.importBtn]}
-            onPress={handleImport}
-            disabled={importing}
-            testID="admin-import-button"
-          >
-            {importing ? (
-              <ActivityIndicator color={COLORS.primary} />
-            ) : (
-              <>
-                <Ionicons name="cloud-upload-outline" size={18} color={COLORS.primary} />
-                <Text style={styles.importBtnText}>{t('admin.importButton')}</Text>
-              </>
-            )}
-          </TouchableOpacity>
         </View>
 
         <View style={styles.section}>
@@ -704,6 +725,45 @@ export default function AdminScreen() {
           >
             <Ionicons name="refresh-outline" size={18} color={COLORS.white} />
             <Text style={styles.dangerBtnText}>{t('admin.careplanResetButton')}</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('admin.dbSectionTitle')}</Text>
+          <Text style={styles.sectionSubtitle}>
+            {t('admin.dbSectionSubtitle')}
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.exportBtn]}
+            onPress={handleExport}
+            disabled={exporting}
+            testID="admin-export-button"
+          >
+            {exporting ? (
+              <ActivityIndicator color={COLORS.white} />
+            ) : (
+              <>
+                <Ionicons name="download-outline" size={18} color={COLORS.white} />
+                <Text style={styles.actionBtnText}>{t('admin.exportButton')}</Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[styles.actionBtn, styles.importBtn]}
+            onPress={handleImport}
+            disabled={importing}
+            testID="admin-import-button"
+          >
+            {importing ? (
+              <ActivityIndicator color={COLORS.primary} />
+            ) : (
+              <>
+                <Ionicons name="cloud-upload-outline" size={18} color={COLORS.primary} />
+                <Text style={styles.importBtnText}>{t('admin.importButton')}</Text>
+              </>
+            )}
           </TouchableOpacity>
         </View>
       </ScrollView>
