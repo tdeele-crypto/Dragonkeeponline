@@ -105,7 +105,7 @@ export default function DragonsScreen() {
                 <DragonAvatar photoBase64={dragon.photo_base64} size={60} />
                 <View style={styles.cardInfo}>
                   <View style={styles.cardNameRow}>
-                    <Text style={styles.cardName} numberOfLines={1} testID={`dragon-card-name-${dragon.id}`}>
+                    <Text style={styles.cardName} numberOfLines={2} testID={`dragon-card-name-${dragon.id}`}>
                       {dragon.name}
                     </Text>
                     <TouchableOpacity
@@ -201,13 +201,14 @@ const styles = StyleSheet.create({
   },
   cardNameRow: {
     flexDirection: 'row',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     gap: 6,
   },
   editIconBtn: {
     width: 32,
     height: 32,
+    marginTop: -4,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -215,6 +216,7 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '800',
     color: COLORS.textPrimary,
+    lineHeight: 20,
     flex: 1,
   },
   cardMeta: {
