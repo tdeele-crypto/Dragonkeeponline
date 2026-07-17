@@ -186,6 +186,10 @@ export default function DagsoversigtScreen() {
             const idx = Math.round(e.nativeEvent.contentOffset.x / (columnWidth + COLUMNS_GAP));
             setActiveDragonIndex(Math.max(0, Math.min(idx, overview.dragons.length - 1)));
           }}
+          onScrollEndDrag={(e) => {
+            const idx = Math.round(e.nativeEvent.contentOffset.x / (columnWidth + COLUMNS_GAP));
+            setActiveDragonIndex(Math.max(0, Math.min(idx, overview.dragons.length - 1)));
+          }}
         >
           {overview.dragons.map((dragon) => (
             <DragonColumn
