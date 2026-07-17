@@ -3,7 +3,7 @@ from starlette.middleware.cors import CORSMiddleware
 import logging
 
 from database import db
-from routes import dragons, task_items, times, schedule_slots, overview, admin, weights
+from routes import dragons, task_items, times, schedule_slots, overview, admin, weights, translate
 from services.careplan_seed import seed_if_empty
 
 app = FastAPI(title="Bearded Dragon Care API")
@@ -32,6 +32,7 @@ api_router.include_router(schedule_slots.router)
 api_router.include_router(overview.router)
 api_router.include_router(admin.router)
 api_router.include_router(weights.router)
+api_router.include_router(translate.router)
 
 app.include_router(api_router)
 

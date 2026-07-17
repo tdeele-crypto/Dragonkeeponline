@@ -1,27 +1,30 @@
-const BASE_URL = `${process.env.EXPO_PUBLIC_BACKEND_URL}/api`;
+/**
+ * Drop-in replacement for the old network-based API client. The app used to
+ * call a FastAPI + MongoDB backend over HTTP for every read/write; it now
+ * runs 100% locally/offline via AsyncStorage (see /app/frontend/localdb).
+ * The `api.get/post/put/delete(path, body)` call signature is kept
+ * identical on purpose, so every existing screen/component in the app
+ * keeps working completely unchanged.
+ */
+import { localRequest } from '@/localdb/router';
 
-async function request(path: string, options: RequestInit = {}) {
-  const res = await fetch(`${BASE_URL}${path}`, {
-    ...options,
-    headers: { 'Content-Type': 'application/json', ...(options.headers || {}) },
-  });
-  if (!res.ok) {
-    let detail = 'Der opstod en fejl';
-    try {
-      const data = await res.json();
-      detail = data.detail || detail;
-    } catch {
-      // ignore
-    }
-    throw new Error(detail);
+function clone<T>(value: T): T {
+  return value === undefined ? value : JSON.parse(JSON.stringify(value));
+}
+
+async function request(method: 'GET' | 'POST' | 'PUT' | 'DELETE', path: string, body?: any) {
+  try {
+    const result = await localRequest(method, path, clone(body));
+    return clone(result);
+  } catch (e: any) {
+    throw new Error(e?.message || 'Der opstod en fejl');
   }
-  if (res.status === 204) return null;
-  return res.json();
 }
 
 export const api = {
-  get: (path: string) => request(path),
-  post: (path: string, body?: any) => request(path, { method: 'POST', body: JSON.stringify(body ?? {}) }),
-  put: (path: string, body?: any) => request(path, { method: 'PUT', body: JSON.stringify(body ?? {}) }),
-  delete: (path: string) => request(path, { method: 'DELETE' }),
+  get: (path: string) => request('GET', path),
+  post: (path: string, body?: any) => request('POST', path, body ?? {}),
+  put: (path: string, body?: any) => request('PUT', path, body ?? {}),
+  delete: (path: string) => request('DELETE', path),
 };
+

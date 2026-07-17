@@ -1,6 +1,6 @@
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { LogBox } from "react-native";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
@@ -8,6 +8,7 @@ import { useIconFonts } from "@/src/hooks/use-icon-fonts";
 import { OverlayProvider } from "@/context/OverlayContext";
 import { AdminSettingsProvider } from "@/context/AdminSettingsContext";
 import { ensureNotificationChannel } from "@/utils/notifications";
+import { bootstrapLocalDb } from "@/localdb/bootstrap";
 
 
 // Disable logbox errors etc so that users can see the app
@@ -22,20 +23,29 @@ SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
   const [iconsLoaded, iconsError] = useIconFonts();
+  const [dbReady, setDbReady] = useState(false);
 
   useEffect(() => {
-    if (iconsLoaded || iconsError) {
+    bootstrapLocalDb()
+      .catch((e) => console.log('Local DB bootstrap error:', e))
+      .finally(() => setDbReady(true));
+  }, []);
+
+  useEffect(() => {
+    if ((iconsLoaded || iconsError) && dbReady) {
       SplashScreen.hideAsync();
     }
-  }, [iconsLoaded, iconsError]);
+  }, [iconsLoaded, iconsError, dbReady]);
 
   useEffect(() => {
     ensureNotificationChannel();
   }, []);
 
   // If the CDN is unreachable we fall through on error rather than wedging
-  // the app — icons will tofu, but the app still boots.
-  if (!(iconsLoaded || iconsError)) return null;
+  // the app — icons will tofu, but the app still boots. Also wait for the
+  // one-time local database bootstrap/migration to finish before rendering
+  // any screen that reads data.
+  if (!(iconsLoaded || iconsError) || !dbReady) return null;
 
   return (
     <SafeAreaProvider>
