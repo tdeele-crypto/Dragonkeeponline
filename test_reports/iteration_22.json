@@ -1,0 +1,30 @@
+{
+  "summary": "Verified the follow-up fix to GET /api/completions/calendar-summary excluding automatic (equipment/light) tasks from total/completed counts. Confirmed via direct API call that all 31 days of July 2026 return status='red', completed=0, and 'total' is now lower than before (6-7 vs previous 10) since only manual (fodring/pleje) slots are counted. UI confirmed: opening the Overview calendar renders ALL July 2026 day cells as RED circles. Manually checked off 1 of 6 manual tasks for today (2026-07-17) -> calendar correctly showed YELLOW (partial). Checked off remaining 5 -> calendar correctly showed GREEN (complete=6/total=6). Unchecked all 6 -> calendar correctly reverted to RED. Verified via API that all completions are back to completed=false and dragons Sif/logan are untouched (2 dragons, names intact). Regression: month prev/next navigation works, tapping a day cell jumps Overview to that date, close button dismisses modal, backdrop click dismisses modal (verified with precise coordinate click after an initial force=True click on the testID falsely showed 'still visible', likely a coordinate/z-order artifact of force-clicking through the sheet - re-tested and confirmed backdrop dismiss works correctly). Dragons page 'Vægt og plejeplan' weight button still navigates correctly to /dragon-weight with correct dragon id/name.",
+  "backend_issues": {
+    "critical": [],
+    "minor": []
+  },
+  "frontend_issues": {
+    "ui_bugs": [],
+    "integration_issues": [],
+    "design_issues": [],
+    "react_native_issues": []
+  },
+  "test_report_links": [],
+  "action_items": [
+    "No fixes required. Both the backend filtering logic and UI rendering behave exactly as specified for the calendar green/yellow/red status refinement.",
+    "Note: initial backdrop-dismiss test attempt using click(testID, force=True) gave a false-negative (modal appeared to stay open); re-testing with a direct coordinate click on the backdrop confirmed dismiss works fine - not a real bug, just a testing artifact worth noting for next iteration's script authors (prefer coordinate click over force=True on full-screen backdrop overlays that sit behind the sheet in DOM order)."
+  ],
+  "critical_code_review_comments": [
+    "overview.py calendar-summary endpoint: registrable = [s for s in slots if not s.get('is_automatic')] correctly excludes automatic slots from both 'total' and 'completed' aggregation - matches the intended behavior described in the review request.",
+    "Edge case handled: if a day/age-category combo has ONLY automatic tasks (total registrable == 0), status correctly falls back to 'none' rather than incorrectly being counted as red/green - verified logic reads correctly in code (lines 133-135), not explicitly hit in this dataset since all days had >=6 manual slots.",
+    "No MongoDB _id leakage found in /api/completions/calendar-summary or /api/daily-overview responses."
+  ],
+  "updated_files": [],
+  "success_rate": {"backend": "100%", "frontend": "100%"},
+  "seed_data_creation": "None. Temporarily toggled 6 real completions (3 for Sif, 3 for logan) on 2026-07-17 (today) to verify yellow->green transition, then reverted all 6 back to completed=false afterward. Verified via GET /api/daily-overview and GET /api/dragons that all 6 completions are false and both dragons (Sif, logan) remain intact and unmodified.",
+  "retest_needed": false,
+  "should_main_agent_self_test": false,
+  "context_for_next_testing_agent": "The automatic-task-exclusion fix for calendar-summary is fully verified working end-to-end (backend calculation + UI color rendering) for red/yellow/green transitions. DB completions collection is back to its pre-test state (all false) for today 2026-07-17. All other days in July 2026 remain red with completed=0 as expected (0 completion records with completed=true anywhere in the DB, matching the review request's stated baseline). Regression on calendar nav/day-jump/close/backdrop and Dragons 'Vægt og plejeplan' button all pass.",
+  "rca_of_issue": "Not applicable - no bugs found in this iteration. Fix works as intended."
+}

@@ -123,8 +123,12 @@ async def get_calendar_summary(year: int = Query(...), month: int = Query(..., g
         total = 0
         for info in dragon_info:
             slots = await get_slots(day_of_week, info["age_category"], info["activity_state"])
-            dragon_slots[info["id"]] = slots
-            total += len(slots)
+            # Only count manually-registrable tasks - automatic (equipment) tasks
+            # like UVB/heat lamps run on their own and aren't something the user
+            # 'registers', so they shouldn't affect the red/yellow/green status.
+            registrable = [s for s in slots if not s.get("is_automatic")]
+            dragon_slots[info["id"]] = registrable
+            total += len(registrable)
 
         if total == 0:
             days_result.append({"date": date_str, "status": "none", "total": 0, "completed": 0})
@@ -137,7 +141,7 @@ async def get_calendar_summary(year: int = Query(...), month: int = Query(..., g
         for info in dragon_info:
             for slot in dragon_slots[info["id"]]:
                 slot_id = str(slot["_id"])
-                if slot.get("is_automatic") or completion_map.get((info["id"], slot_id)):
+                if completion_map.get((info["id"], slot_id)):
                     completed += 1
 
         if completed == 0:
