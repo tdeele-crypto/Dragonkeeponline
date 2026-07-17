@@ -69,6 +69,7 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'tasks.settingsTitle': 'Indstillinger',
     'tasks.remindersLabel': 'Påmindelser',
     'tasks.remindersSubLabel': 'Få lokale notifikationer for planlagte opgaver',
+    'tasks.feedingSuggestionsButton': 'Se foderforslag',
 
     'schedule.title': 'Ugeplaner',
     'schedule.fetchError': 'Kunne ikke hente ugeplan',
@@ -335,6 +336,7 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
     'tasks.settingsTitle': 'Settings',
     'tasks.remindersLabel': 'Reminders',
     'tasks.remindersSubLabel': 'Get local notifications for scheduled tasks',
+    'tasks.feedingSuggestionsButton': 'View feeding suggestions',
 
     'schedule.title': 'Schedules',
     'schedule.fetchError': 'Could not load schedule',

@@ -320,6 +320,18 @@ export default function ListsScreen() {
                 />
               )}
             </View>
+
+            {activeTab === 'fodring' && (
+              <TouchableOpacity
+                style={styles.feedingSuggestionsBtn}
+                onPress={() => router.push('/feeding-suggestions')}
+                testID="feeding-suggestions-button"
+              >
+                <Ionicons name="restaurant-outline" size={18} color={COLORS.categories.fodring.text} />
+                <Text style={styles.feedingSuggestionsBtnText}>{t('tasks.feedingSuggestionsButton')}</Text>
+                <Ionicons name="chevron-forward" size={18} color={COLORS.categories.fodring.text} />
+              </TouchableOpacity>
+            )}
           </View>
         </ScrollView>
       )}
@@ -502,6 +514,21 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: COLORS.textMuted,
     marginTop: 2,
+  },
+  feedingSuggestionsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: COLORS.borderLight,
+  },
+  feedingSuggestionsBtnText: {
+    flex: 1,
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.categories.fodring.text,
   },
   fab: {
     position: 'absolute',
