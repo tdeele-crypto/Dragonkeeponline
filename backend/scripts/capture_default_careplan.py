@@ -46,7 +46,12 @@ async def capture():
         return
 
     time_str_by_id = {str(t["_id"]): t["time"] for t in times_docs}
-    times_sorted = sorted({t["time"] for t in times_docs})
+    # De-duplicate on the time string, keep the winter_time of the first doc seen.
+    times_seen: dict = {}
+    for t in times_docs:
+        if t["time"] not in times_seen:
+            times_seen[t["time"]] = t.get("winter_time")
+    times_sorted = sorted(times_seen.items())  # list of (time, winter_time) tuples
 
     # Build item key map, de-duplicating on (category, name) just in case.
     item_key_by_id = {}
@@ -121,7 +126,8 @@ from typing import List, Dict, Any
 DAYS: List[str] = {DAYS!r}
 AGE_CATEGORIES: List[str] = {AGE_CATEGORIES!r}
 
-TIMES: List[str] = {times_sorted!r}
+# Each entry: {{"time": "HH:MM", "winter_time": "HH:MM" | None}}
+TIMES: List[Dict[str, Any]] = {[{"time": t, "winter_time": wt} for t, wt in times_sorted]!r}
 
 ITEMS: Dict[str, Dict[str, Any]] = {{
 {py_repr_items()}
@@ -143,9 +149,9 @@ async def apply_default_careplan(db) -> Dict[str, int]:
 
     time_id_map: Dict[str, str] = {{}}
     for t in TIMES:
-        doc = TimeSlot(time=t)
+        doc = TimeSlot(time=t["time"], winter_time=t.get("winter_time"))
         await db.times.insert_one(doc.to_mongo())
-        time_id_map[t] = doc.id
+        time_id_map[t["time"]] = doc.id
 
     item_id_map: Dict[str, str] = {{}}
     for key, spec in ITEMS.items():

@@ -1,100 +1,198 @@
 """Built-in default bearded dragon care plan (bilingual da/en) used by the
-Admin > 'Reset & load care plan' feature.
+Admin > 'Reset & load care plan' feature, and auto-seeded on a fresh install.
 
-Content is based on commonly recommended bearded dragon husbandry guidelines
-(feeding frequency/diet ratio by age, UVB/heat photoperiod). This is a
-sensible starting point only - users should always adjust to their own vet's
-or breeder's guidance, and everything below remains fully editable in the
-app after loading (times, items, and weekly schedule slots).
+CAPTURED FROM THE LIVE APP by scripts/capture_default_careplan.py - this is
+the user's own customized plan, not a generic template. Editing the app's
+Times/Feeding/Care/Light&Heat/Schedules again and re-running that script will
+regenerate this file.
 """
 from typing import List, Dict, Any
 
-DAYS: List[str] = ["mandag", "tirsdag", "onsdag", "torsdag", "fredag", "lørdag", "søndag"]
-AGE_CATEGORIES: List[str] = ["2-4", "4-7", "7-12", "12+"]
+DAYS: List[str] = ['mandag', 'tirsdag', 'onsdag', 'torsdag', 'fredag', 'lørdag', 'søndag']
+AGE_CATEGORIES: List[str] = ['2-4', '4-7', '7-12', '12+']
 
-# ---------------------------------------------------------------------------
-# Times shared across all age categories
-# ---------------------------------------------------------------------------
-TIMES: List[str] = ["07:00", "08:00", "09:00", "13:00", "16:00", "18:00", "20:30"]
+# Each entry: {"time": "HH:MM", "winter_time": "HH:MM" | None}
+TIMES: List[Dict[str, Any]] = [{'time': '07:00', 'winter_time': '08:00'}, {'time': '08:30', 'winter_time': None}, {'time': '09:00', 'winter_time': None}, {'time': '16:30', 'winter_time': None}, {'time': '17:00', 'winter_time': None}, {'time': '18:00', 'winter_time': None}, {'time': '19:30', 'winter_time': None}, {'time': '20:00', 'winter_time': '19:35'}, {'time': '20:45', 'winter_time': '20:00'}]
 
-# ---------------------------------------------------------------------------
-# Task items - key -> (category, name_da, name_en, is_automatic)
-# ---------------------------------------------------------------------------
 ITEMS: Dict[str, Dict[str, Any]] = {
-    "insects": {"category": "fodring", "da": "Levende foderinsekter", "en": "Live feeder insects", "auto": False},
-    "veg": {"category": "fodring", "da": "Bladgrønt og grøntsager", "en": "Leafy greens & vegetables", "auto": False},
-    "fruit": {"category": "fodring", "da": "Frugt (ugentlig godbid)", "en": "Fruit (weekly treat)", "auto": False},
-    "calcium": {"category": "fodring", "da": "Kalk-pudder (uden D3)", "en": "Calcium powder (no D3)", "auto": False},
-    "multivitamin": {"category": "fodring", "da": "Multivitamin-pudder (med D3)", "en": "Multivitamin powder (with D3)", "auto": False},
-    "water": {"category": "pleje", "da": "Tjek og påfyld vand", "en": "Check & refill water", "auto": False},
-    "climate": {"category": "pleje", "da": "Tjek temperatur og fugtighed", "en": "Check temperature & humidity", "auto": False},
-    "clean": {"category": "pleje", "da": "Rengør terrarium", "en": "Clean terrarium", "auto": False},
-    "health": {"category": "pleje", "da": "Tjek adfærd og sundhed", "en": "Check behavior & health", "auto": False},
-    "uvb": {"category": "lys", "da": "UVB-lys", "en": "UVB light", "auto": True},
-    "heat": {"category": "lys", "da": "Varmelampe", "en": "Heat lamp", "auto": True},
-    "night_heat": {"category": "lys", "da": "Keramisk natvarmer (ved behov)", "en": "Ceramic night heater (if needed)", "auto": False},
+    "insects_with_legs": {"category": "fodring", "da": 'Insekter med ben', "en": 'Insects with legs', "auto": False},
+    "leafy_greens": {"category": "fodring", "da": 'Bladgrønt', "en": 'Leafy greens', "auto": False},
+    "calcium_powder_no_d3": {"category": "fodring", "da": 'Kalk-pudder (uden D3)', "en": 'Calcium powder (no D3)', "auto": False},
+    "multivitamin_powder_with_d3": {"category": "fodring", "da": 'Multivitamin-pudder (med D3)', "en": 'Multivitamin powder (with D3)', "auto": False},
+    "check_refill_water": {"category": "pleje", "da": 'Tjek og påfyld vand', "en": 'Check & refill water', "auto": False},
+    "check_temperature_humidity": {"category": "pleje", "da": 'Tjek temperatur og fugtighed', "en": 'Check temperature & humidity', "auto": False},
+    "clean_terrarium": {"category": "pleje", "da": 'Rengør terrarium', "en": 'Clean terrarium', "auto": False},
+    "check_behavior_health": {"category": "pleje", "da": 'Tjek adfærd og sundhed', "en": 'Check behavior & health', "auto": False},
+    "uvb_light": {"category": "lys", "da": 'UVB-lys', "en": 'UVB light', "auto": True},
+    "heat_lamp": {"category": "lys", "da": 'Varmelampe', "en": 'Heat lamp', "auto": True},
+    "ceramic_night_heater_if_needed": {"category": "lys", "da": 'Keramisk natvarmer (ved behov)', "en": 'Ceramic night heater (if needed)', "auto": False},
+    "legless_insects": {"category": "fodring", "da": 'Insekter uden ben', "en": 'Legless insects', "auto": False},
+    "vegetables": {"category": "fodring", "da": 'Grøntsager', "en": 'Vegetables', "auto": False},
+    "weekly_cleaning_and_disinfection": {"category": "pleje", "da": 'Ugentlig rengøring og desinfektion.', "en": 'Weekly cleaning and disinfection', "auto": False},
+    "remove_feces": {"category": "pleje", "da": 'Fjern afføring', "en": 'Remove feces', "auto": False},
+    "snack_legless_insects": {"category": "fodring", "da": 'Snack - insekter uden ben', "en": 'Snack legless insects', "auto": False},
 }
 
-# Which weekdays get a live-insect feeding, per age category (diet mellows with age)
-INSECT_DAYS: Dict[str, List[str]] = {
-    "2-4": DAYS,  # juvenile: insects every day (+ a 2nd feed at 16:00)
-    "4-7": ["mandag", "onsdag", "fredag", "søndag"],  # sub-adult: ~every other day
-    "7-12": ["tirsdag", "torsdag", "lørdag"],  # transitioning: ~3x/week
-    "12+": ["tirsdag", "lørdag"],  # adult: ~2x/week, mostly veg
-}
+_SLOTS: List[Dict[str, Any]] = [
+    {"age": "2-4", "day": "mandag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "mandag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "calcium_powder_no_d3"], "auto": False},
+    {"age": "2-4", "day": "mandag", "time": "16:30", "category": "fodring", "items": ["leafy_greens", "legless_insects"], "auto": False},
+    {"age": "2-4", "day": "mandag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "2-4", "day": "mandag", "time": "20:45", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "tirsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "tirsdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "2-4", "day": "tirsdag", "time": "16:30", "category": "fodring", "items": ["insects_with_legs", "calcium_powder_no_d3", "leafy_greens"], "auto": False},
+    {"age": "2-4", "day": "tirsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "2-4", "day": "tirsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "onsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "onsdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "calcium_powder_no_d3"], "auto": False},
+    {"age": "2-4", "day": "onsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens", "legless_insects"], "auto": False},
+    {"age": "2-4", "day": "onsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "2-4", "day": "onsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "torsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "torsdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "2-4", "day": "torsdag", "time": "16:30", "category": "fodring", "items": ["insects_with_legs", "calcium_powder_no_d3", "leafy_greens"], "auto": False},
+    {"age": "2-4", "day": "torsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "2-4", "day": "torsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "fredag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "fredag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "calcium_powder_no_d3"], "auto": False},
+    {"age": "2-4", "day": "fredag", "time": "16:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens"], "auto": False},
+    {"age": "2-4", "day": "fredag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "2-4", "day": "fredag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "lørdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "lørdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "2-4", "day": "lørdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens", "legless_insects", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "2-4", "day": "lørdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "2-4", "day": "lørdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "søndag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "2-4", "day": "søndag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens"], "auto": False},
+    {"age": "2-4", "day": "søndag", "time": "16:30", "category": "fodring", "items": ["leafy_greens", "legless_insects", "calcium_powder_no_d3"], "auto": False},
+    {"age": "2-4", "day": "søndag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces", "weekly_cleaning_and_disinfection"], "auto": False},
+    {"age": "2-4", "day": "søndag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "mandag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "mandag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "calcium_powder_no_d3"], "auto": False},
+    {"age": "4-7", "day": "mandag", "time": "16:30", "category": "fodring", "items": ["leafy_greens", "legless_insects"], "auto": False},
+    {"age": "4-7", "day": "mandag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "4-7", "day": "mandag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "tirsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "tirsdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "4-7", "day": "tirsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "4-7", "day": "tirsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "4-7", "day": "tirsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "onsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "onsdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "calcium_powder_no_d3"], "auto": False},
+    {"age": "4-7", "day": "onsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens", "legless_insects"], "auto": False},
+    {"age": "4-7", "day": "onsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "4-7", "day": "onsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "torsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "torsdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "4-7", "day": "torsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "4-7", "day": "torsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "4-7", "day": "torsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "fredag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "fredag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "calcium_powder_no_d3"], "auto": False},
+    {"age": "4-7", "day": "fredag", "time": "16:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens"], "auto": False},
+    {"age": "4-7", "day": "fredag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "4-7", "day": "fredag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "lørdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "lørdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "4-7", "day": "lørdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "4-7", "day": "lørdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health"], "auto": False},
+    {"age": "4-7", "day": "lørdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "søndag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "4-7", "day": "søndag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens"], "auto": False},
+    {"age": "4-7", "day": "søndag", "time": "16:30", "category": "fodring", "items": ["leafy_greens", "legless_insects", "calcium_powder_no_d3"], "auto": False},
+    {"age": "4-7", "day": "søndag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces", "weekly_cleaning_and_disinfection"], "auto": False},
+    {"age": "4-7", "day": "søndag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "mandag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "mandag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "calcium_powder_no_d3", "vegetables"], "auto": False},
+    {"age": "7-12", "day": "mandag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "7-12", "day": "mandag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "7-12", "day": "mandag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "tirsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "tirsdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "7-12", "day": "tirsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "7-12", "day": "tirsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "7-12", "day": "tirsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "onsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "onsdag", "time": "08:30", "category": "fodring", "items": ["leafy_greens", "calcium_powder_no_d3", "legless_insects"], "auto": False},
+    {"age": "7-12", "day": "onsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "7-12", "day": "onsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "7-12", "day": "onsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "torsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "torsdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens"], "auto": False},
+    {"age": "7-12", "day": "torsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "7-12", "day": "torsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "7-12", "day": "torsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "fredag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "fredag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens", "calcium_powder_no_d3"], "auto": False},
+    {"age": "7-12", "day": "fredag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "7-12", "day": "fredag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "7-12", "day": "fredag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "lørdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "lørdag", "time": "08:30", "category": "fodring", "items": ["leafy_greens", "multivitamin_powder_with_d3", "legless_insects"], "auto": False},
+    {"age": "7-12", "day": "lørdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "7-12", "day": "lørdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health"], "auto": False},
+    {"age": "7-12", "day": "lørdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "søndag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "7-12", "day": "søndag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "leafy_greens"], "auto": False},
+    {"age": "7-12", "day": "søndag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "7-12", "day": "søndag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces", "weekly_cleaning_and_disinfection"], "auto": False},
+    {"age": "7-12", "day": "søndag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "mandag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "mandag", "time": "08:30", "category": "fodring", "items": ["leafy_greens", "vegetables", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "12+", "day": "mandag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "mandag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "12+", "day": "mandag", "time": "19:30", "category": "fodring", "items": ["legless_insects"], "auto": False},
+    {"age": "12+", "day": "mandag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "tirsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "tirsdag", "time": "08:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "tirsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "tirsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "12+", "day": "tirsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "onsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "onsdag", "time": "08:30", "category": "fodring", "items": ["leafy_greens", "vegetables", "insects_with_legs", "calcium_powder_no_d3"], "auto": False},
+    {"age": "12+", "day": "onsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "onsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "12+", "day": "onsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "torsdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "torsdag", "time": "08:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "torsdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "torsdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "12+", "day": "torsdag", "time": "19:30", "category": "fodring", "items": ["snack_legless_insects"], "auto": False},
+    {"age": "12+", "day": "torsdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "fredag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "fredag", "time": "08:30", "category": "fodring", "items": ["leafy_greens", "vegetables", "multivitamin_powder_with_d3"], "auto": False},
+    {"age": "12+", "day": "fredag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "fredag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces"], "auto": False},
+    {"age": "12+", "day": "fredag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "lørdag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "lørdag", "time": "08:30", "category": "fodring", "items": ["insects_with_legs", "calcium_powder_no_d3"], "auto": False},
+    {"age": "12+", "day": "lørdag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "lørdag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health"], "auto": False},
+    {"age": "12+", "day": "lørdag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "søndag", "time": "07:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+    {"age": "12+", "day": "søndag", "time": "08:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "søndag", "time": "16:30", "category": "fodring", "items": ["leafy_greens"], "auto": False},
+    {"age": "12+", "day": "søndag", "time": "18:00", "category": "pleje", "items": ["check_refill_water", "check_behavior_health", "remove_feces", "weekly_cleaning_and_disinfection"], "auto": False},
+    {"age": "12+", "day": "søndag", "time": "20:00", "category": "lys", "items": ["uvb_light", "heat_lamp"], "auto": True},
+]
 
 
 def build_slots() -> List[Dict[str, Any]]:
-    """Returns a flat list of dicts: {age_category, day_of_week, time, category, item_keys, is_automatic}
-    Caller resolves `time` -> time_id and `item_keys` -> item_ids before inserting."""
-    slots: List[Dict[str, Any]] = []
-
-    for age in AGE_CATEGORIES:
-        insect_days = INSECT_DAYS[age]
-        for day in DAYS:
-            # Lights on/off (automatic)
-            slots.append({"age": age, "day": day, "time": "07:00", "category": "lys", "items": ["uvb", "heat"], "auto": True})
-            slots.append({"age": age, "day": day, "time": "20:30", "category": "lys", "items": ["uvb", "heat"], "auto": True})
-
-            # Morning veg + supplement (calcium daily, multivitamin on Wednesdays, fruit on Fridays)
-            veg_items = ["veg", "calcium"]
-            if day == "onsdag":
-                veg_items.append("multivitamin")
-            if day == "fredag":
-                veg_items.append("fruit")
-            slots.append({"age": age, "day": day, "time": "09:00", "category": "fodring", "items": veg_items, "auto": False})
-
-            # Insects on age-appropriate days
-            if day in insect_days:
-                slots.append({"age": age, "day": day, "time": "08:00", "category": "fodring", "items": ["insects"], "auto": False})
-            if age == "2-4":
-                # Juveniles get a 2nd feed in the afternoon
-                slots.append({"age": age, "day": day, "time": "16:00", "category": "fodring", "items": ["insects"], "auto": False})
-
-            # Daily care checks
-            slots.append({"age": age, "day": day, "time": "13:00", "category": "pleje", "items": ["climate"], "auto": False})
-            evening_care_items = ["water", "health"]
-            if day == "søndag":
-                # Weekly terrarium cleaning folded into the evening care slot
-                evening_care_items.append("clean")
-            slots.append({"age": age, "day": day, "time": "18:00", "category": "pleje", "items": evening_care_items, "auto": False})
-
-    return slots
+    return _SLOTS
 
 
 async def apply_default_careplan(db) -> Dict[str, int]:
     """Inserts TIMES/ITEMS/build_slots() into the given (empty) collections.
-    Does NOT wipe anything first - caller is responsible for that if needed.
-    Used by both the Admin > 'Reset & load care plan' endpoint and the
-    first-run auto-seed on a fresh/empty database."""
-    # Local imports to avoid a circular import between models.py and this module.
+    Does NOT wipe anything first - caller is responsible for that if needed."""
     from models import TimeSlot, TaskItem, ScheduleSlot
 
     time_id_map: Dict[str, str] = {}
     for t in TIMES:
-        doc = TimeSlot(time=t)
+        doc = TimeSlot(time=t["time"], winter_time=t.get("winter_time"))
         await db.times.insert_one(doc.to_mongo())
-        time_id_map[t] = doc.id
+        time_id_map[t["time"]] = doc.id
 
     item_id_map: Dict[str, str] = {}
     for key, spec in ITEMS.items():
@@ -133,9 +231,7 @@ async def apply_default_careplan(db) -> Dict[str, int]:
 async def seed_if_empty(db) -> None:
     """Called once at backend startup. If Times/Task-items/Schedule-slots are
     ALL empty (fresh install / fresh database), auto-loads the default care
-    plan so new installs start with a ready-to-use plan instead of an empty
-    app. Never touches dragons/weight_entries, and never overwrites existing
-    data (only runs when everything is empty)."""
+    plan captured above."""
     import logging
     logger = logging.getLogger(__name__)
     has_times = await db.times.find_one({})
