@@ -24,13 +24,14 @@ import type { DailyOverview } from '@/types';
 
 const COLUMNS_HORIZONTAL_PADDING = 20;
 const COLUMNS_GAP = 16;
-const MAX_COLUMN_WIDTH = 360;
 
 export default function DagsoversigtScreen() {
   const router = useRouter();
   const showToast = useToast();
   const { width: screenWidth } = useWindowDimensions();
-  const columnWidth = Math.min(screenWidth - COLUMNS_HORIZONTAL_PADDING * 2, MAX_COLUMN_WIDTH);
+  // Always exactly one dragon column fills the available width (minus side
+  // padding) - on wide/tablet screens this avoids peeking a 2nd column.
+  const columnWidth = screenWidth - COLUMNS_HORIZONTAL_PADDING * 2;
   const { appBgColor, pageTitleColor, language, t } = useAdminSettings();
   const [date, setDate] = useState(new Date());
   const [overview, setOverview] = useState<DailyOverview | null>(null);
