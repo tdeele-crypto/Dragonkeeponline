@@ -175,13 +175,40 @@ export default function DragonFormScreen() {
 
           <FormField label={t('dragonForm.morphLabel')} testID="dragon-form-morph-input" value={morph} onChangeText={setMorph} placeholder={t('dragonForm.morphPlaceholder')} />
 
-          <PickerField
-            label={t('dragonForm.birthdayLabel')}
-            value={birthday.toLocaleDateString(language === 'da' ? 'da-DK' : 'en-US')}
-            onPress={() => setShowDatePicker(true)}
-            testID="dragon-form-birthday-picker"
-            icon="calendar-outline"
-          />
+          {Platform.OS === 'web' ? (
+            <View style={styles.webDateWrap}>
+              <Text style={styles.label}>{t('dragonForm.birthdayLabel')}</Text>
+              {/* @ts-expect-error web-only DOM element rendered by react-native-web */}
+              <input
+                type="date"
+                value={birthday.toISOString().split('T')[0]}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e: any) => {
+                  const v = e?.target?.value;
+                  if (v) setBirthday(new Date(v + 'T12:00:00'));
+                }}
+                data-testid="dragon-form-birthday-picker"
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  padding: '14px',
+                  fontSize: '16px',
+                  borderRadius: '12px',
+                  border: `1px solid ${COLORS.border}`,
+                  backgroundColor: COLORS.surface,
+                  color: COLORS.textPrimary,
+                }}
+              />
+            </View>
+          ) : (
+            <PickerField
+              label={t('dragonForm.birthdayLabel')}
+              value={birthday.toLocaleDateString(language === 'da' ? 'da-DK' : 'en-US')}
+              onPress={() => setShowDatePicker(true)}
+              testID="dragon-form-birthday-picker"
+              icon="calendar-outline"
+            />
+          )}
 
           <Text style={styles.label}>{t('dragonForm.ageAutoLabel')}</Text>
           <View style={styles.ageAutoBox} testID="dragon-form-age-category-computed">
@@ -318,6 +345,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
+  },
+  webDateWrap: {
+    marginBottom: 16,
   },
   ageAutoBox: {
     flexDirection: 'row',
