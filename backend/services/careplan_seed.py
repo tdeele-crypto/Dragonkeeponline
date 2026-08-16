@@ -183,20 +183,22 @@ def build_slots() -> List[Dict[str, Any]]:
     return _SLOTS
 
 
-async def apply_default_careplan(db) -> Dict[str, int]:
-    """Inserts TIMES/ITEMS/build_slots() into the given (empty) collections.
-    Does NOT wipe anything first - caller is responsible for that if needed."""
+async def apply_default_careplan(db, workspace_id: str) -> Dict[str, int]:
+    """Inserts TIMES/ITEMS/build_slots() into the given (empty) collections
+    for a specific workspace. Does NOT wipe anything first - caller is
+    responsible for that if needed."""
     from models import TimeSlot, TaskItem, ScheduleSlot
 
     time_id_map: Dict[str, str] = {}
     for t in TIMES:
-        doc = TimeSlot(time=t["time"], winter_time=t.get("winter_time"))
+        doc = TimeSlot(workspace_id=workspace_id, time=t["time"], winter_time=t.get("winter_time"))
         await db.times.insert_one(doc.to_mongo())
         time_id_map[t["time"]] = doc.id
 
     item_id_map: Dict[str, str] = {}
     for key, spec in ITEMS.items():
         doc = TaskItem(
+            workspace_id=workspace_id,
             category=spec["category"],
             name=spec["en"],
             name_da=spec["da"],
@@ -210,6 +212,7 @@ async def apply_default_careplan(db) -> Dict[str, int]:
     slot_docs = []
     for s in raw_slots:
         slot = ScheduleSlot(
+            workspace_id=workspace_id,
             age_category=s["age"],
             day_of_week=s["day"],
             time_id=time_id_map[s["time"]],
@@ -226,21 +229,3 @@ async def apply_default_careplan(db) -> Dict[str, int]:
         "items_count": len(item_id_map),
         "schedule_slots_count": len(slot_docs),
     }
-
-
-async def seed_if_empty(db) -> None:
-    """Called once at backend startup. If Times/Task-items/Schedule-slots are
-    ALL empty (fresh install / fresh database), auto-loads the default care
-    plan captured above."""
-    import logging
-    logger = logging.getLogger(__name__)
-    has_times = await db.times.find_one({})
-    has_items = await db.task_items.find_one({})
-    has_slots = await db.schedule_slots.find_one({})
-    if has_times or has_items or has_slots:
-        return
-    try:
-        counts = await apply_default_careplan(db)
-        logger.info(f"First-run auto-seed: loaded default care plan {counts}")
-    except Exception as e:
-        logger.warning(f"First-run auto-seed failed (app still usable, Admin > Reset can retry): {e}")

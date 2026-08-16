@@ -12,7 +12,7 @@
       "supportsTablet": true,
       "infoPlist": {
         "NSCameraUsageDescription": "Tag et billede af din agame",
-        "NSPhotoLibraryUsageDescription": "Vælg et billede af din agame fra galleriet"
+        "NSPhotoLibraryUsageDescription": "V\u00e6lg et billede af din agame fra galleriet"
       },
       "bundleIdentifier": "com.emergent.beardedbuddylog.p5bd1f"
     },
@@ -48,7 +48,7 @@
       [
         "expo-image-picker",
         {
-          "photosPermission": "Vælg et billede af din agame fra galleriet",
+          "photosPermission": "V\u00e6lg et billede af din agame fra galleriet",
           "cameraPermission": "Tag et billede af din agame"
         }
       ],

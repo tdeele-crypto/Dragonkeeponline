@@ -1,5 +1,5 @@
 from typing import List, Optional, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, EmailStr
 from datetime import datetime, UTC, date as date_cls
 from database import BaseDocument
 
@@ -11,6 +11,7 @@ AppLanguage = Literal["en", "da"]
 WeightUnitPref = Literal["g", "oz"]
 TimeFormatPref = Literal["12h", "24h"]
 ActivityState = Literal["active", "brumation"]
+UserRole = Literal["superadmin", "user"]
 
 
 def compute_age_category(birthday: str) -> AgeCategory:
@@ -34,7 +35,59 @@ def compute_age_category(birthday: str) -> AgeCategory:
     return "12+"
 
 
+# ----------------------------- Auth / Users ----------------------------- #
+
+class Workspace(BaseDocument):
+    name: str
+    owner_user_id: str = ""
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+class User(BaseDocument):
+    email: str
+    password_hash: str
+    display_name: Optional[str] = None
+    role: UserRole = "user"
+    workspace_id: str
+    is_active: bool = True
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+    last_login: Optional[datetime] = None
+
+
+class RegisterRequest(BaseModel):
+    email: EmailStr
+    password: str = Field(min_length=6)
+    display_name: Optional[str] = None
+    invite_code: Optional[str] = None
+
+
+class LoginRequest(BaseModel):
+    email: EmailStr
+    password: str
+
+
+class UserActiveUpdate(BaseModel):
+    is_active: bool
+
+
+class InviteCreate(BaseModel):
+    email: EmailStr
+
+
+class Invite(BaseDocument):
+    workspace_id: str
+    email: str
+    code: str
+    created_by: str
+    accepted: bool = False
+    accepted_by: Optional[str] = None
+    created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
+
+
+# ----------------------------- Domain data ----------------------------- #
+
 class Dragon(BaseDocument):
+    workspace_id: Optional[str] = None
     name: str
     gender: Gender
     color: str
@@ -69,6 +122,7 @@ class DragonActivityStateUpdate(BaseModel):
 
 
 class TaskItem(BaseDocument):
+    workspace_id: Optional[str] = None
     category: TaskCategory
     name: str
     name_da: Optional[str] = None
@@ -85,6 +139,7 @@ class TaskItemCreate(BaseModel):
 
 
 class TimeSlot(BaseDocument):
+    workspace_id: Optional[str] = None
     time: str
     winter_time: Optional[str] = None
     created_at: datetime = Field(default_factory=lambda: datetime.now(UTC))
@@ -96,6 +151,7 @@ class TimeSlotCreate(BaseModel):
 
 
 class ScheduleSlot(BaseDocument):
+    workspace_id: Optional[str] = None
     age_category: AgeCategory
     day_of_week: DayOfWeek
     time_id: str
@@ -131,6 +187,7 @@ class ScheduleSlotBulkCopy(BaseModel):
 
 
 class WeightEntry(BaseDocument):
+    workspace_id: Optional[str] = None
     dragon_id: str
     weight_grams: float
     note: Optional[str] = None
@@ -145,6 +202,7 @@ class WeightEntryCreate(BaseModel):
 
 
 class Completion(BaseDocument):
+    workspace_id: Optional[str] = None
     dragon_id: str
     schedule_slot_id: str
     date: str
@@ -159,6 +217,7 @@ class CompletionToggle(BaseModel):
 
 
 class AppSettings(BaseDocument):
+    workspace_id: Optional[str] = None
     banner_image_base64: Optional[str] = None
     banner_text: Optional[str] = None
     banner_bg_color: Optional[str] = None

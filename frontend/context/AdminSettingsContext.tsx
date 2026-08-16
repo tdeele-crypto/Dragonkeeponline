@@ -1,6 +1,7 @@
 import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import * as Localization from 'expo-localization';
 import { api } from '@/utils/api';
+import { useAuth } from '@/context/AuthContext';
 import { t as translate, type Language, type WeightUnit, type TimeFormat } from '@/i18n/translations';
 
 /** Detect a sensible default language from the device/system locale.
@@ -45,6 +46,7 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
   const [timeFormat, setTimeFormat] = useState<TimeFormat>('12h');
   const [lightSummerStart, setLightSummerStart] = useState('03-01');
   const [lightWinterStart, setLightWinterStart] = useState('09-01');
+  const { token } = useAuth();
 
   const refresh = useCallback(async () => {
     try {
@@ -78,8 +80,8 @@ export function AdminSettingsProvider({ children }: { children: React.ReactNode 
   }, []);
 
   useEffect(() => {
-    refresh();
-  }, [refresh]);
+    if (token) refresh();
+  }, [refresh, token]);
 
   const t = useMemo(
     () => (key: string, vars?: Record<string, string | number>) => translate(key, language, vars),

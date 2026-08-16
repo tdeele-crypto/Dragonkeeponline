@@ -1,10 +1,11 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   ActivityIndicator,
   Image,
   Modal,
   Platform,
   ScrollView,
+  Share,
   StyleSheet,
   Text,
   TextInput,
@@ -15,16 +16,14 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
-import * as DocumentPicker from 'expo-document-picker';
 import * as Sharing from 'expo-sharing';
 import * as Print from 'expo-print';
-import { File, Paths } from 'expo-file-system';
 import DateTimePicker from '@react-native-community/datetimepicker';
 import { COLORS } from '@/constants/colors';
-import { formatDateISO } from '@/constants/data';
 import { api } from '@/utils/api';
 import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
+import { useAuth } from '@/context/AuthContext';
 import type { Language, WeightUnit, TimeFormat } from '@/i18n/translations';
 import PageBanner from '@/components/PageBanner';
 import PickerField from '@/components/PickerField';
@@ -88,9 +87,13 @@ export default function AdminScreen() {
   const [localBgColor, setLocalBgColor] = useState<string | null>(null);
   const [localHeadingColor, setLocalHeadingColor] = useState<string | null>(null);
   const [savingBanner, setSavingBanner] = useState(false);
-  const [exporting, setExporting] = useState(false);
-  const [importing, setImporting] = useState(false);
   const [generatingGuide, setGeneratingGuide] = useState(false);
+
+  const { user, logout } = useAuth();
+  const [inviteEmail, setInviteEmail] = useState('');
+  const [inviting, setInviting] = useState(false);
+  const [invites, setInvites] = useState<{ id: string; email: string; code: string; accepted: boolean }[]>([]);
+  const [members, setMembers] = useState<{ id: string; email: string; display_name: string | null; is_me: boolean }[]>([]);
 
   const [localAppBgColor, setLocalAppBgColor] = useState<string | null>(null);
   const [localPageTitleColor, setLocalPageTitleColor] = useState<string | null>(null);
@@ -266,75 +269,80 @@ export default function AdminScreen() {
     }
   };
 
-  const handleExport = async () => {
-    if (Platform.OS === 'web') {
-      showToast(t('admin.webUnsupported'), 'error');
+  const loadSharing = useCallback(async () => {
+    try {
+      const [inv, mem] = await Promise.all([
+        api.get('/invites'),
+        api.get('/workspace/members'),
+      ]);
+      setInvites(inv);
+      setMembers(mem);
+    } catch {
+      // non-fatal
+    }
+  }, []);
+
+  useEffect(() => {
+    loadSharing();
+  }, [loadSharing]);
+
+  const handleCreateInvite = async () => {
+    const email = inviteEmail.trim().toLowerCase();
+    if (!email || !email.includes('@')) {
+      showToast(t('admin.inviteInvalidEmail'), 'error');
       return;
     }
-    setExporting(true);
+    setInviting(true);
     try {
-      const data = await api.get('/admin/export');
-      const json = JSON.stringify(data, null, 2);
-      const fileName = `skaegagame-backup-${formatDateISO(new Date())}.json`;
-      const file = new File(Paths.document, fileName);
-      await file.write(json);
-
-      const canShare = await Sharing.isAvailableAsync();
-      if (canShare) {
-        await Sharing.shareAsync(file.uri, { mimeType: 'application/json', dialogTitle: fileName });
-      } else {
-        showToast(t('admin.exportSuccess'), 'success');
-      }
+      await api.post('/invites', { email });
+      setInviteEmail('');
+      await loadSharing();
+      showToast(t('admin.inviteCreated'), 'success');
     } catch (e: any) {
-      showToast(e.message || t('admin.exportError'), 'error');
+      showToast(e.message || t('admin.inviteError'), 'error');
     } finally {
-      setExporting(false);
+      setInviting(false);
     }
   };
 
-  const handleImport = async () => {
-    if (Platform.OS === 'web') {
-      showToast(t('admin.webUnsupported'), 'error');
-      return;
-    }
+  const handleShareCode = async (code: string, email: string) => {
     try {
-      const result = await DocumentPicker.getDocumentAsync({
-        type: 'application/json',
-        copyToCacheDirectory: true,
+      await Share.share({
+        message: t('admin.inviteShareMessage', { code, email }),
       });
-      if (result.canceled || !result.assets?.[0]) return;
-
-      const file = new File(result.assets[0].uri);
-      const text = await file.text();
-      const data = JSON.parse(text);
-
-      if (!data.dragons || !data.task_items) {
-        showToast(t('admin.importInvalidFile'), 'error');
-        return;
-      }
-
-      showConfirm({
-        title: t('admin.importConfirmTitle'),
-        message: t('admin.importConfirmMessage'),
-        confirmLabel: t('admin.importConfirmButton'),
-        cancelLabel: t('common.cancel'),
-        destructive: true,
-        onConfirm: async () => {
-          setImporting(true);
-          try {
-            await api.post('/admin/import', data);
-            await refresh();
-            showToast(t('admin.importSuccess'), 'success');
-          } catch (e: any) {
-            showToast(e.message || t('admin.importError'), 'error');
-          } finally {
-            setImporting(false);
-          }
-        },
-      });
-    } catch (e: any) {
-      showToast(e.message || t('admin.importReadError'), 'error');
+    } catch {
+      // user cancelled
     }
+  };
+
+  const handleDeleteInvite = (id: string) => {
+    showConfirm({
+      title: t('admin.inviteDeleteTitle'),
+      confirmLabel: t('admin.inviteDeleteConfirm'),
+      cancelLabel: t('common.cancel'),
+      destructive: true,
+      onConfirm: async () => {
+        try {
+          await api.delete(`/invites/${id}`);
+          await loadSharing();
+          showToast(t('admin.inviteDeleted'), 'success');
+        } catch (e: any) {
+          showToast(e.message || t('admin.inviteError'), 'error');
+        }
+      },
+    });
+  };
+
+  const handleLogout = () => {
+    showConfirm({
+      title: t('admin.logoutTitle'),
+      message: t('admin.logoutMessage'),
+      confirmLabel: t('admin.logoutButton'),
+      cancelLabel: t('common.cancel'),
+      onConfirm: async () => {
+        await logout();
+      },
+    });
   };
 
   const handleDownloadGuide = async () => {
@@ -729,41 +737,113 @@ export default function AdminScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>{t('admin.dbSectionTitle')}</Text>
-          <Text style={styles.sectionSubtitle}>
-            {t('admin.dbSectionSubtitle')}
-          </Text>
+          <Text style={styles.sectionTitle}>{t('admin.shareSectionTitle')}</Text>
+          <Text style={styles.sectionSubtitle}>{t('admin.shareSectionSubtitle')}</Text>
 
+          <Text style={styles.label}>{t('admin.inviteEmailLabel')}</Text>
+          <TextInput
+            style={styles.input}
+            value={inviteEmail}
+            onChangeText={setInviteEmail}
+            placeholder={t('admin.inviteEmailPlaceholder')}
+            placeholderTextColor={COLORS.textMuted}
+            autoCapitalize="none"
+            keyboardType="email-address"
+            testID="admin-invite-email-input"
+          />
           <TouchableOpacity
-            style={[styles.actionBtn, styles.exportBtn]}
-            onPress={handleExport}
-            disabled={exporting}
-            testID="admin-export-button"
+            style={[styles.saveBtn, inviting && styles.saveBtnDisabled]}
+            onPress={handleCreateInvite}
+            disabled={inviting}
+            testID="admin-invite-button"
           >
-            {exporting ? (
+            {inviting ? (
               <ActivityIndicator color={COLORS.white} />
             ) : (
-              <>
-                <Ionicons name="download-outline" size={18} color={COLORS.white} />
-                <Text style={styles.actionBtnText}>{t('admin.exportButton')}</Text>
-              </>
+              <Text style={styles.saveBtnText}>{t('admin.inviteButton')}</Text>
             )}
           </TouchableOpacity>
 
+          {invites.filter((i) => !i.accepted).length > 0 && (
+            <View style={styles.listBlock}>
+              <Text style={styles.listHeading}>{t('admin.invitePendingHeading')}</Text>
+              {invites
+                .filter((i) => !i.accepted)
+                .map((inv) => (
+                  <View key={inv.id} style={styles.inviteRow} testID={`admin-invite-row-${inv.id}`}>
+                    <View style={styles.flex1}>
+                      <Text style={styles.inviteEmail} numberOfLines={1}>{inv.email}</Text>
+                      <Text style={styles.inviteCode}>{t('admin.inviteCodeLabel')}: {inv.code}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.inviteIconBtn}
+                      onPress={() => handleShareCode(inv.code, inv.email)}
+                      testID={`admin-invite-share-${inv.id}`}
+                    >
+                      <Ionicons name="share-social-outline" size={20} color={COLORS.primary} />
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.inviteIconBtn}
+                      onPress={() => handleDeleteInvite(inv.id)}
+                      testID={`admin-invite-delete-${inv.id}`}
+                    >
+                      <Ionicons name="trash-outline" size={20} color={COLORS.danger} />
+                    </TouchableOpacity>
+                  </View>
+                ))}
+            </View>
+          )}
+
+          {members.length > 0 && (
+            <View style={styles.listBlock}>
+              <Text style={styles.listHeading}>{t('admin.shareMembersHeading')}</Text>
+              {members.map((m) => (
+                <View key={m.id} style={styles.memberRow} testID={`admin-member-row-${m.id}`}>
+                  <Ionicons name="person-circle-outline" size={22} color={COLORS.textSecondary} />
+                  <Text style={styles.memberEmail} numberOfLines={1}>
+                    {m.email}
+                    {m.is_me ? ` (${t('admin.shareMemberYou')})` : ''}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>{t('admin.accountSectionTitle')}</Text>
+          <View style={styles.accountRow}>
+            <Ionicons
+              name={user?.role === 'superadmin' ? 'shield-checkmark' : 'person-circle-outline'}
+              size={26}
+              color={COLORS.primary}
+            />
+            <View style={styles.flex1}>
+              <Text style={styles.accountEmail} numberOfLines={1}>{user?.email}</Text>
+              <Text style={styles.accountRole}>
+                {user?.role === 'superadmin' ? t('admin.accountSuperadmin') : t('admin.accountUser')}
+              </Text>
+            </View>
+          </View>
+
+          {user?.role === 'superadmin' && (
+            <TouchableOpacity
+              style={[styles.actionBtn, styles.exportBtn]}
+              onPress={() => router.push('/users')}
+              testID="admin-manage-users-button"
+            >
+              <Ionicons name="people-outline" size={18} color={COLORS.white} />
+              <Text style={styles.actionBtnText}>{t('admin.manageUsersButton')}</Text>
+            </TouchableOpacity>
+          )}
+
           <TouchableOpacity
             style={[styles.actionBtn, styles.importBtn]}
-            onPress={handleImport}
-            disabled={importing}
-            testID="admin-import-button"
+            onPress={handleLogout}
+            testID="admin-logout-button"
           >
-            {importing ? (
-              <ActivityIndicator color={COLORS.primary} />
-            ) : (
-              <>
-                <Ionicons name="cloud-upload-outline" size={18} color={COLORS.primary} />
-                <Text style={styles.importBtnText}>{t('admin.importButton')}</Text>
-              </>
-            )}
+            <Ionicons name="log-out-outline" size={18} color={COLORS.primary} />
+            <Text style={styles.importBtnText}>{t('admin.logoutButton')}</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
@@ -1057,6 +1137,75 @@ const styles = StyleSheet.create({
     color: COLORS.white,
     fontSize: 15,
     fontWeight: '800',
+  },
+  flex1: { flex: 1 },
+  listBlock: {
+    marginTop: 16,
+  },
+  listHeading: {
+    fontSize: 13,
+    fontWeight: '800',
+    color: COLORS.textSecondary,
+    marginBottom: 10,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+  },
+  inviteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: COLORS.background,
+    borderRadius: 12,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    marginBottom: 8,
+  },
+  inviteEmail: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  inviteCode: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: COLORS.primary,
+    marginTop: 2,
+    letterSpacing: 1,
+  },
+  inviteIconBtn: {
+    width: 40,
+    height: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingVertical: 6,
+  },
+  memberEmail: {
+    fontSize: 14,
+    color: COLORS.textPrimary,
+    flex: 1,
+  },
+  accountRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    marginBottom: 16,
+  },
+  accountEmail: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+  },
+  accountRole: {
+    fontSize: 13,
+    color: COLORS.textSecondary,
+    marginTop: 2,
   },
   modalOverlay: {
     flex: 1,

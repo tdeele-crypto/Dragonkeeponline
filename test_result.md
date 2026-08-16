@@ -331,3 +331,128 @@
 ## agent_communication (new):
     - agent: "main"
       message: "Two changes this round: (1) Dragons screen card: moved the edit/pencil icon to sit next to the dragon's name (top of card) instead of in the 3-icon column, so the meta text (gender/color/morph) and age badge have more room and wrap less. (2) NEW Overview feature: each dragon column now has 2 small icon buttons (Active / Brumation) to the right of the name+age, behaving like a radio button - exactly one is always 'on' (colored), the other greyed out. Backend: dragon.activity_state ('active'|'brumation') persists via PUT /api/dragons/{id}/activity-state; when 'brumation', ALL feeding tasks are hidden from that dragon's daily overview (care/light&heat tasks unaffected) until switched back to 'active'. Manually verified backend end-to-end (7 tasks active -> 4 tasks brumation -> 7 tasks active again). Please test: (a) tapping Active/Brumation icons toggles state and visually swaps which icon is colored vs grey, (b) switching to Brumation immediately removes feeding task rows from that dragon's column (pleje/lys rows remain), switching back restores them, (c) state persists after leaving/reopening the Overview tab or app, (d) Dragons screen card - edit icon now next to name, weight+delete icons still work, verify text/age no longer wraps awkwardly. IMPORTANT: this feature works PER DRAGON independently - toggling one dragon must not affect others."
+
+
+
+## ================= NEW SESSION: ONLINE MULTI-USER (AUTH + SHARING) =================
+## user_problem_statement (this session): Turn the offline single-user "Dragon Keeper" app into an ONLINE MULTI-USER version. Add email+password auth. Add a built-in SUPER USER (thorbjorn74@msn.com / Selma2026!) that manages users (deactivate inactive/no-longer-active users, delete them). Each user has their own Overview, Dragons, Weekplans, Tasks (Times/Feeding/Care/Heat&Light) and their own Admin. REMOVE Import/Export database. On the Admin page, invite a person by email -> generates a join code; when that person registers with the code they JOIN the inviter's workspace and SHARE EVERYTHING (dragons, plan, daily checkmarks). Existing backend data assigned to the superadmin on first boot.
+
+### backend (this session):
+  - task: "Email+password auth (JWT + bcrypt): /api/auth/register, /login, /me"
+    implemented: true
+    working: true
+    file: "backend/services/auth.py, backend/routes/auth.py, backend/models.py, backend/.env (JWT_SECRET)"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "JWT HS256 bearer tokens, bcrypt hashing. register creates own workspace + seeds default careplan; register with invite_code joins inviter workspace (no seed). login validates + rejects deactivated (403). Verified via curl: superadmin login 200, register 200, 401 without token."
+        - working: true
+          agent: "testing"
+          comment: "PASSED all auth tests (Tests 1-5): ✓ Superadmin login (thorbjorn74@msn.com) returns 200 with access_token and role='superadmin'. ✓ New user registration returns 200 with token, role='user', and unique workspace_id. ✓ GET /auth/me with token returns 200 with correct user data. ✓ Protected endpoints without token return 401. ✓ Login with wrong password returns 401. All JWT token generation, bcrypt password hashing, and authentication flows working correctly."
+  - task: "Workspace scoping on ALL data routes (dragons/times/task_items/schedule_slots/weights/overview/admin settings)"
+    implemented: true
+    working: true
+    file: "backend/routes/*.py, backend/models.py (workspace_id added), backend/services/careplan_seed.py (workspace_id param)"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Every route now Depends(get_workspace_id) and filters/inserts by workspace_id. app_settings now per-workspace (was singleton). reset-careplan scoped to workspace. Verified via curl: new user isolated (0 dragons, own 9 times); superadmin sees adopted legacy data."
+        - working: true
+          agent: "testing"
+          comment: "PASSED all workspace scoping tests (Tests 6-9, 24): ✓ Two separate users (A & B) have different workspace_ids. ✓ Dragon created by user A is visible to A but NOT visible to user B (perfect isolation). ✓ New users get seeded default care plan: 9 times, 16 task items, 142 schedule slots, 0 dragons initially. ✓ Admin settings (language, weight_unit) are per-workspace: user A's changes don't affect user B. ✓ POST /admin/reset-careplan only affects caller's workspace (user A reset doesn't touch user B's data). ✓ Dragons survive care plan reset (not deleted). All workspace scoping and data isolation working perfectly."
+  - task: "Superadmin user management: GET /api/users, PUT /api/users/{id}/active, DELETE /api/users/{id}"
+    implemented: true
+    working: true
+    file: "backend/routes/users.py, backend/services/auth.py (require_superadmin)"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Superadmin-only (403 for normal users - verified). Cannot deactivate/delete self or another superadmin. Verified via curl: list shows all users, 403 for non-admin."
+        - working: true
+          agent: "testing"
+          comment: "PASSED all superadmin management tests (Tests 17-23): ✓ GET /users as superadmin returns 200 with all users list. ✓ GET /users as normal user returns 403. ✓ PUT /users/{id}/active with is_active=false deactivates user; deactivated user login returns 403. ✓ Reactivating user (is_active=true) allows login again. ✓ Superadmin cannot deactivate self (400). ✓ Superadmin cannot deactivate another superadmin (400). ✓ DELETE /users/{id} as superadmin returns 200 and removes user. ✓ DELETE /users/{id} as normal user returns 403. All superadmin user management features working correctly with proper authorization checks."
+  - task: "Invite by email -> join code; shared workspace: POST/GET/DELETE /api/invites, GET /api/workspace/members"
+    implemented: true
+    working: true
+    file: "backend/routes/invites.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Invite generates short code; registering with it joins the workspace (shared everything). Verified via curl: alice invite -> bob registers -> same workspace_id; members lists both."
+        - working: true
+          agent: "testing"
+          comment: "PASSED all invite and shared workspace tests (Tests 10-16): ✓ POST /invites creates invite with unique code. ✓ GET /invites lists pending invites with accepted=false. ✓ Registering with valid invite_code joins inviter's workspace (user C joined user A's workspace). ✓ User C can see user A's dragon (shared workspace data access working). ✓ GET /workspace/members lists both users in shared workspace. ✓ Registering with invalid invite_code returns 400. ✓ Reusing already-accepted invite_code returns 400. All invite flow and workspace sharing features working perfectly."
+  - task: "Startup bootstrap: create superadmin + adopt legacy workspace-less data"
+    implemented: true
+    working: true
+    file: "backend/services/bootstrap.py, backend/server.py"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: false
+    status_history:
+        - working: true
+          agent: "main"
+          comment: "On startup creates superadmin (thorbjorn74@msn.com/Selma2026!) if missing and assigns all workspace-less docs to its workspace. Verified in logs: adopted 16 task_items/9 times/142 schedule_slots. Removed old /admin/export and /admin/import endpoints."
+
+### frontend (this session):
+  - task: "Online API client (HTTP + JWT) replacing local DB; AuthContext + token store"
+    implemented: true
+    working: "NA"
+    file: "frontend/utils/api.ts, frontend/utils/authToken.ts, frontend/context/AuthContext.tsx, frontend/context/AdminSettingsContext.tsx"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "api.ts now fetches EXPO_PUBLIC_BACKEND_URL/api with Authorization: Bearer from authToken (in-memory + AsyncStorage). Same api.get/post/put/delete signature so NO screen rewrites. AdminSettings refreshes when token changes. NOTE: could not fully verify login->app transition via screenshot tool (its async playwright fill/click were no-ops); needs frontend testing agent."
+  - task: "Auth gating with expo-router v6 Stack.Protected; Login & Register screens"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/_layout.tsx, frontend/app/login.tsx, frontend/app/register.tsx"
+    stuck_count: 1
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Root uses <Stack.Protected guard={!!token}> for (tabs)+modals and guard={!token} for login/register. Per troubleshooter, removed all manual router.replace across auth boundary (guard handles nav). Verified: unauth '/' shows Login. Login/Register screens render. Post-login transition needs verification via testing agent."
+  - task: "Admin: remove Import/Export; add Invite & sharing + Account/logout + superadmin Manage users"
+    implemented: true
+    working: "NA"
+    file: "frontend/app/(tabs)/admin.tsx, frontend/app/users.tsx, frontend/i18n/translations.ts"
+    stuck_count: 0
+    priority: "high"
+    needs_retesting: true
+    status_history:
+        - working: "NA"
+          agent: "main"
+          comment: "Removed Database export/import section. Added 'Invite & share care plan' (email -> code, pending invites list w/ share+delete, members list), 'Account' section (email/role, logout, and Manage users for superadmin -> /users screen with activate/deactivate/delete)."
+
+## test_plan (this session):
+  current_focus:
+    - "Email+password auth (JWT + bcrypt): /api/auth/register, /login, /me"
+    - "Workspace scoping on ALL data routes"
+    - "Superadmin user management"
+    - "Invite by email -> join code; shared workspace"
+  stuck_tasks: []
+  test_all: false
+  test_priority: "high_first"
+
+## agent_communication (this session):
+    - agent: "main"
+      message: "Converted Dragon Keeper to online multi-user. Please TEST BACKEND: (1) POST /api/auth/register (new user gets own workspace + seeded 9 times/16 items/142 slots, 0 dragons). (2) POST /api/auth/login for superadmin thorbjorn74@msn.com / Selma2026! -> role superadmin. (3) All data endpoints require Bearer token (401 without). (4) Data isolation between two different users' workspaces (create dragon as user A, not visible to user B). (5) Invite flow: POST /api/invites {email} returns code; register a new user with that invite_code -> same workspace_id; both appear in GET /api/workspace/members. (6) Superadmin: GET /api/users (all users), PUT /api/users/{id}/active {is_active:false} then that user's login -> 403; DELETE /api/users/{id}; non-superadmin gets 403 on these. (7) Cannot deactivate/delete self or a superadmin. (8) reset-careplan only affects caller's workspace. NOTE: /admin/export and /admin/import were REMOVED (should 404)."
+    - agent: "testing"
+      message: "✅ ALL BACKEND TESTS PASSED (25/25). Comprehensive testing completed covering: (1) AUTH: Superadmin login, new user registration, /auth/me, 401 without token, wrong password rejection - all working. (2) WORKSPACE SCOPING: Perfect data isolation between users, seeded default care plan (9 times/16 items/142 slots), per-workspace settings, scoped care plan reset - all working. (3) INVITE & SHARING: Invite code generation, registration with invite joins workspace, shared data access, members list, invalid/reused code rejection - all working. (4) SUPERADMIN MANAGEMENT: List users (403 for normal users), deactivate/reactivate users, delete users, cannot deactivate/delete self or other superadmins - all working. (5) REMOVED ENDPOINTS: /admin/export and /admin/import both return 404 as expected. Backend is production-ready for multi-user online Dragon Keeper app."

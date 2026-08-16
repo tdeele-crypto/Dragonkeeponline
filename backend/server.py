@@ -3,28 +3,40 @@ from starlette.middleware.cors import CORSMiddleware
 import logging
 
 from database import db
-from routes import dragons, task_items, times, schedule_slots, overview, admin, weights, translate
-from services.careplan_seed import seed_if_empty
+from routes import (
+    dragons,
+    task_items,
+    times,
+    schedule_slots,
+    overview,
+    admin,
+    weights,
+    translate,
+    auth,
+    users,
+    invites,
+)
+from services.bootstrap import bootstrap
 
-app = FastAPI(title="Bearded Dragon Care API")
+app = FastAPI(title="Dragon Keeper API")
 
 api_router = APIRouter(prefix="/api")
 
 
 @api_router.get("/")
 async def root():
-    return {"message": "Bearded Dragon Care API"}
+    return {"message": "Dragon Keeper API"}
 
 
 @app.on_event("startup")
 async def on_startup():
-    """First-run auto-seed: if the database is completely fresh (no times,
-    task items, or schedule slots yet), load the default bilingual care plan
-    automatically so a new install isn't empty. Safe to run on every restart -
-    it's a strict no-op once any data exists."""
-    await seed_if_empty(db)
+    """Ensure the built-in superadmin exists and adopt any legacy data."""
+    await bootstrap(db)
 
 
+api_router.include_router(auth.router)
+api_router.include_router(users.router)
+api_router.include_router(invites.router)
 api_router.include_router(dragons.router)
 api_router.include_router(task_items.router)
 api_router.include_router(times.router)
