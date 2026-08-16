@@ -7,8 +7,8 @@
 FROM node:20-bookworm AS build
 WORKDIR /app
 
-COPY frontend/package.json frontend/yarn.lock ./
-RUN yarn install --frozen-lockfile
+COPY frontend/package.json ./
+RUN yarn install --network-timeout 600000
 
 COPY frontend .
 
