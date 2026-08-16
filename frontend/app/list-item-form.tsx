@@ -13,6 +13,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import DateTimePicker from '@react-native-community/datetimepicker';
+import WebDateInput from '@/components/WebDateInput';
 import { COLORS } from '@/constants/colors';
 import { getCategoryLabel, formatTimeDisplay } from '@/i18n/translations';
 import { api } from '@/utils/api';
@@ -126,13 +127,30 @@ export default function ListItemFormScreen() {
         <View style={styles.form}>
           {isTime ? (
             <>
-              <PickerField
-                label={t('listItemForm.timeLabel')}
-                value={formatTimeDisplay(`${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`, timeFormat)}
-                onPress={() => setShowTimePicker(true)}
-                testID="list-item-form-time-picker"
-                icon="time-outline"
-              />
+              {Platform.OS === 'web' ? (
+                <WebDateInput
+                  type="time"
+                  label={t('listItemForm.timeLabel')}
+                  value={`${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`}
+                  onChangeValue={(v) => {
+                    const [hh, mm] = v.split(':').map(Number);
+                    if (!isNaN(hh)) {
+                      const d = new Date(time);
+                      d.setHours(hh, mm || 0, 0, 0);
+                      setTime(d);
+                    }
+                  }}
+                  testID="list-item-form-time-picker"
+                />
+              ) : (
+                <PickerField
+                  label={t('listItemForm.timeLabel')}
+                  value={formatTimeDisplay(`${String(time.getHours()).padStart(2, '0')}:${String(time.getMinutes()).padStart(2, '0')}`, timeFormat)}
+                  onPress={() => setShowTimePicker(true)}
+                  testID="list-item-form-time-picker"
+                  icon="time-outline"
+                />
+              )}
 
               <View style={styles.autoRow} testID="list-item-form-winter-time-row">
                 <View style={{ flex: 1 }}>
@@ -148,13 +166,30 @@ export default function ListItemFormScreen() {
               </View>
 
               {winterTimeEnabled && (
-                <PickerField
-                  label={t('listItemForm.winterTimeLabel')}
-                  value={formatTimeDisplay(`${String(winterTime.getHours()).padStart(2, '0')}:${String(winterTime.getMinutes()).padStart(2, '0')}`, timeFormat)}
-                  onPress={() => setShowWinterTimePicker(true)}
-                  testID="list-item-form-winter-time-picker"
-                  icon="snow-outline"
-                />
+                Platform.OS === 'web' ? (
+                  <WebDateInput
+                    type="time"
+                    label={t('listItemForm.winterTimeLabel')}
+                    value={`${String(winterTime.getHours()).padStart(2, '0')}:${String(winterTime.getMinutes()).padStart(2, '0')}`}
+                    onChangeValue={(v) => {
+                      const [hh, mm] = v.split(':').map(Number);
+                      if (!isNaN(hh)) {
+                        const d = new Date(winterTime);
+                        d.setHours(hh, mm || 0, 0, 0);
+                        setWinterTime(d);
+                      }
+                    }}
+                    testID="list-item-form-winter-time-picker"
+                  />
+                ) : (
+                  <PickerField
+                    label={t('listItemForm.winterTimeLabel')}
+                    value={formatTimeDisplay(`${String(winterTime.getHours()).padStart(2, '0')}:${String(winterTime.getMinutes()).padStart(2, '0')}`, timeFormat)}
+                    onPress={() => setShowWinterTimePicker(true)}
+                    testID="list-item-form-winter-time-picker"
+                    icon="snow-outline"
+                  />
+                )
               )}
             </>
           ) : (

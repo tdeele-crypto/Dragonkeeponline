@@ -32,6 +32,7 @@ import { useConfirm, useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import FormField from '@/components/FormField';
 import PickerField from '@/components/PickerField';
+import WebDateInput from '@/components/WebDateInput';
 import { buildWeightPdfHtml, computeExactAge } from '@/utils/weightPdf';
 import type { Dragon, WeightEntry } from '@/types';
 
@@ -255,13 +256,26 @@ export default function DragonWeightScreen() {
                 placeholder={t('weight.weightPlaceholder', { example: weightUnit === 'oz' ? '11.3' : '320' })}
                 keyboardType="decimal-pad"
               />
-              <PickerField
-                label={t('weight.dateLabel')}
-                value={formatDateLabel(date, language)}
-                onPress={() => setShowDatePicker(true)}
-                testID="weight-form-date-picker"
-                icon="calendar-outline"
-              />
+              {Platform.OS === 'web' ? (
+                <WebDateInput
+                  type="date"
+                  label={t('weight.dateLabel')}
+                  value={date.toISOString().split('T')[0]}
+                  max={new Date().toISOString().split('T')[0]}
+                  onChangeValue={(v) => {
+                    if (v) setDate(new Date(v + 'T12:00:00'));
+                  }}
+                  testID="weight-form-date-picker"
+                />
+              ) : (
+                <PickerField
+                  label={t('weight.dateLabel')}
+                  value={formatDateLabel(date, language)}
+                  onPress={() => setShowDatePicker(true)}
+                  testID="weight-form-date-picker"
+                  icon="calendar-outline"
+                />
+              )}
               <FormField
                 label={t('weight.noteLabel')}
                 testID="weight-form-note-input"

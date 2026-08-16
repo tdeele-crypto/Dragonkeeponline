@@ -27,6 +27,7 @@ import { useAuth } from '@/context/AuthContext';
 import type { Language, WeightUnit, TimeFormat } from '@/i18n/translations';
 import PageBanner from '@/components/PageBanner';
 import PickerField from '@/components/PickerField';
+import WebDateInput from '@/components/WebDateInput';
 import { buildGuidePdfHtml } from '@/utils/guidePdf';
 
 function monthDayToDate(mmdd: string): Date {
@@ -412,21 +413,53 @@ export default function AdminScreen() {
           <Text style={styles.sectionTitle}>{t('admin.seasonSectionTitle')}</Text>
           <Text style={styles.sectionSubtitle}>{t('admin.seasonSectionSubtitle')}</Text>
 
-          <PickerField
-            label={t('admin.seasonSummerLabel')}
-            value={formatDayMonth(summerDate)}
-            onPress={() => setShowSummerPicker(true)}
-            testID="admin-season-summer-picker"
-            icon="sunny-outline"
-          />
+          {Platform.OS === 'web' ? (
+            <WebDateInput
+              type="date"
+              label={t('admin.seasonSummerLabel')}
+              value={`${summerDate.getFullYear()}-${String(summerDate.getMonth() + 1).padStart(2, '0')}-${String(summerDate.getDate()).padStart(2, '0')}`}
+              onChangeValue={(v) => {
+                if (v) {
+                  const d = new Date(v + 'T12:00:00');
+                  setSummerDate(d);
+                  saveSeasonSetting({ light_summer_start: dateToMonthDay(d) });
+                }
+              }}
+              testID="admin-season-summer-picker"
+            />
+          ) : (
+            <PickerField
+              label={t('admin.seasonSummerLabel')}
+              value={formatDayMonth(summerDate)}
+              onPress={() => setShowSummerPicker(true)}
+              testID="admin-season-summer-picker"
+              icon="sunny-outline"
+            />
+          )}
 
-          <PickerField
-            label={t('admin.seasonWinterLabel')}
-            value={formatDayMonth(winterDate)}
-            onPress={() => setShowWinterPicker(true)}
-            testID="admin-season-winter-picker"
-            icon="snow-outline"
-          />
+          {Platform.OS === 'web' ? (
+            <WebDateInput
+              type="date"
+              label={t('admin.seasonWinterLabel')}
+              value={`${winterDate.getFullYear()}-${String(winterDate.getMonth() + 1).padStart(2, '0')}-${String(winterDate.getDate()).padStart(2, '0')}`}
+              onChangeValue={(v) => {
+                if (v) {
+                  const d = new Date(v + 'T12:00:00');
+                  setWinterDate(d);
+                  saveSeasonSetting({ light_winter_start: dateToMonthDay(d) });
+                }
+              }}
+              testID="admin-season-winter-picker"
+            />
+          ) : (
+            <PickerField
+              label={t('admin.seasonWinterLabel')}
+              value={formatDayMonth(winterDate)}
+              onPress={() => setShowWinterPicker(true)}
+              testID="admin-season-winter-picker"
+              icon="snow-outline"
+            />
+          )}
 
           {savingSeason && (
             <ActivityIndicator color={COLORS.primary} size="small" testID="admin-season-saving-indicator" />
