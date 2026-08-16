@@ -7,10 +7,10 @@
 FROM node:20-bookworm AS build
 WORKDIR /app
 
-COPY frontend/package.json ./
-RUN yarn install --network-timeout 600000
-
 COPY frontend .
+# Strip Emergent's internal dev-only preinstall guard (not needed for a
+# production build); dependency install scripts are kept intact.
+RUN npm pkg delete scripts.preinstall && yarn install --network-timeout 600000
 
 # EXPO_PUBLIC_* vars are inlined into the JS bundle at build time, so the
 # backend URL MUST be provided here (not at runtime).
