@@ -1,6 +1,6 @@
 # Dragon Keeper backend (FastAPI + uvicorn).
 # Build context = repository root:  podman build -f deploy/backend.Containerfile .
-FROM python:3.12-slim
+FROM docker.io/library/python:3.12-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PIP_NO_CACHE_DIR=1
