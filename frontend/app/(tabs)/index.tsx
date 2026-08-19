@@ -144,9 +144,10 @@ export default function DagsoversigtScreen() {
       });
 
       if (Platform.OS === 'web') {
-        await Print.printAsync({ html });
+        await Print.printAsync({ html, orientation: Print.Orientation.landscape });
       } else {
-        const { uri } = await Print.printToFileAsync({ html, base64: false });
+        // A4 landscape in points (842 x 595) so the 7-day grid is not squeezed.
+        const { uri } = await Print.printToFileAsync({ html, base64: false, width: 842, height: 595 });
         if (await Sharing.isAvailableAsync()) {
           await Sharing.shareAsync(uri, {
             mimeType: 'application/pdf',
