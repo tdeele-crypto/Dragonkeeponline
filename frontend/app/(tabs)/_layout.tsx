@@ -15,15 +15,20 @@ export default function TabsLayout() {
         headerShown: false,
         tabBarActiveTintColor: COLORS.primary,
         tabBarInactiveTintColor: COLORS.textMuted,
+        tabBarAllowFontScaling: false,
         tabBarStyle: {
-          height: 62 + insets.bottom,
-          paddingBottom: insets.bottom + 8,
+          height: 70 + insets.bottom,
+          paddingBottom: insets.bottom + 10,
           paddingTop: 8,
           backgroundColor: COLORS.white,
           borderTopColor: COLORS.border,
         },
+        tabBarIconStyle: {
+          marginTop: 2,
+        },
         tabBarLabelStyle: {
           fontSize: 11,
+          lineHeight: 14,
           fontWeight: '700',
         },
       }}

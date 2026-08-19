@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Platform,
   RefreshControl,
   ScrollView,
   StyleSheet,
@@ -12,10 +13,13 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useFocusEffect, useRouter } from 'expo-router';
+import * as Print from 'expo-print';
+import * as Sharing from 'expo-sharing';
 import { COLORS } from '@/constants/colors';
 import { formatDateISO, isSameDay } from '@/constants/data';
 import { formatFullDate } from '@/i18n/translations';
 import { api } from '@/utils/api';
+import { buildWeekplanPdfHtml } from '@/utils/weekplanPdf';
 import { useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import DragonColumn from '@/components/DragonColumn';
@@ -40,6 +44,7 @@ export default function DagsoversigtScreen() {
   const [refreshing, setRefreshing] = useState(false);
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [activeDragonIndex, setActiveDragonIndex] = useState(0);
+  const [exportingWeek, setExportingWeek] = useState(false);
 
   const fetchOverview = useCallback(async (d: Date, showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -111,16 +116,79 @@ export default function DagsoversigtScreen() {
 
   const isToday = isSameDay(date, new Date());
 
+  const handlePrintWeek = async () => {
+    const dragon = overview?.dragons[activeDragonIndex];
+    if (!dragon) return;
+    setExportingWeek(true);
+    try {
+      // Monday of the currently viewed week
+      const monday = new Date(date);
+      const dow = (monday.getDay() + 6) % 7; // 0 = Monday
+      monday.setDate(monday.getDate() - dow);
+
+      const days = [];
+      for (let i = 0; i < 7; i++) {
+        const d = new Date(monday);
+        d.setDate(monday.getDate() + i);
+        const data = await api.get(`/daily-overview?date=${formatDateISO(d)}`);
+        const dr = data.dragons.find((x: any) => x.dragon_id === dragon.dragon_id);
+        days.push({ date: formatDateISO(d), tasks: dr ? dr.tasks : [] });
+      }
+
+      const html = buildWeekplanPdfHtml({
+        dragonName: dragon.name,
+        ageCategory: dragon.age_category,
+        activityState: dragon.activity_state,
+        days,
+        language,
+      });
+
+      if (Platform.OS === 'web') {
+        await Print.printAsync({ html });
+      } else {
+        const { uri } = await Print.printToFileAsync({ html, base64: false });
+        if (await Sharing.isAvailableAsync()) {
+          await Sharing.shareAsync(uri, {
+            mimeType: 'application/pdf',
+            UTI: 'com.adobe.pdf',
+            dialogTitle: `${dragon.name} - ${t('overview.printWeekplan')}`,
+          });
+        }
+      }
+    } catch (e: any) {
+      showToast(e?.message || t('overview.printError'), 'error');
+    } finally {
+      setExportingWeek(false);
+    }
+  };
+
   return (
     <SafeAreaView style={[styles.safeArea, appBgColor ? { backgroundColor: appBgColor } : null]} edges={['top']}>
       <PageBanner />
       <View style={styles.header}>
         <Text style={[styles.title, pageTitleColor ? { color: pageTitleColor } : null]}>{t('overview.title')}</Text>
-        {!isToday && (
-          <TouchableOpacity style={styles.todayBtn} onPress={goToday} testID="overview-today-button">
-            <Text style={styles.todayBtnText}>{t('overview.today')}</Text>
-          </TouchableOpacity>
-        )}
+        <View style={styles.headerActions}>
+          {overview && overview.dragons.length > 0 && (
+            <TouchableOpacity
+              style={styles.printBtn}
+              onPress={handlePrintWeek}
+              disabled={exportingWeek}
+              testID="overview-print-week-button"
+              accessibilityLabel={t('overview.printWeekplan')}
+            >
+              {exportingWeek ? (
+                <ActivityIndicator size="small" color={COLORS.primary} />
+              ) : (
+                <Ionicons name="print-outline" size={20} color={COLORS.primary} />
+              )}
+            </TouchableOpacity>
+          )}
+          {!isToday && (
+            <TouchableOpacity style={styles.todayBtn} onPress={goToday} testID="overview-today-button">
+              <Text style={styles.todayBtnText}>{t('overview.today')}</Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
 
       <View style={styles.dateNav}>
@@ -246,6 +314,20 @@ const styles = StyleSheet.create({
     borderRadius: 999,
     paddingHorizontal: 14,
     paddingVertical: 8,
+    marginTop: 4,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  printBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: COLORS.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
     marginTop: 4,
   },
   todayBtnText: {

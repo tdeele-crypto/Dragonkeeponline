@@ -28,6 +28,8 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
 
     'overview.title': 'Dagsoversigt',
     'overview.today': 'I dag',
+    'overview.printWeekplan': 'Print ugeplan',
+    'overview.printError': 'Kunne ikke oprette PDF',
     'overview.fetchError': 'Kunne ikke hente dagsoversigt',
     'overview.updateError': 'Kunne ikke opdatere opgave',
     'overview.emptyTitle': 'Ingen agamer endnu',
@@ -354,6 +356,8 @@ export const UI_TEXT: Record<Language, Record<string, string>> = {
 
     'overview.title': 'Overview',
     'overview.today': 'Today',
+    'overview.printWeekplan': 'Print weekly plan',
+    'overview.printError': 'Could not create PDF',
     'overview.fetchError': 'Could not load overview',
     'overview.updateError': 'Could not update task',
     'overview.emptyTitle': 'No dragons yet',
