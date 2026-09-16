@@ -46,6 +46,10 @@ function RootNavigator() {
         <Stack.Screen name="login" />
         <Stack.Screen name="register" />
       </Stack.Protected>
+
+      {/* Always accessible (also via emailed reset link) */}
+      <Stack.Screen name="forgot-password" />
+      <Stack.Screen name="reset-password" />
     </Stack>
   );
 }

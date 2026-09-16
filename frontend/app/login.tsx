@@ -102,6 +102,14 @@ export default function LoginScreen() {
         </TouchableOpacity>
 
         <TouchableOpacity
+          testID="login-forgot-password-link"
+          style={styles.forgotRow}
+          onPress={() => router.push('/forgot-password')}
+        >
+          <Text style={styles.link}>Forgot password?</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
           testID={LOGIN.registerLink}
           style={styles.linkRow}
           onPress={() => router.push('/register')}
@@ -145,6 +153,7 @@ const styles = StyleSheet.create({
   buttonDisabled: { opacity: 0.6 },
   buttonText: { color: COLORS.white, fontSize: 16, fontWeight: '800' },
   linkRow: { flexDirection: 'row', justifyContent: 'center', marginTop: 22 },
+  forgotRow: { alignItems: 'center', marginTop: 16 },
   linkMuted: { color: COLORS.textSecondary, fontSize: 14 },
   link: { color: COLORS.primary, fontSize: 14, fontWeight: '700' },
 });

@@ -1,5 +1,9 @@
-from fastapi import APIRouter, HTTPException, Depends
-from datetime import datetime, UTC
+from fastapi import APIRouter, HTTPException, Depends, BackgroundTasks
+from datetime import datetime, timedelta, UTC
+import hashlib
+import secrets
+
+from pydantic import BaseModel, EmailStr, Field
 
 from database import db, to_object_id
 from models import RegisterRequest, LoginRequest, User, Workspace
@@ -10,9 +14,23 @@ from services.auth import (
     user_public,
     get_current_user,
 )
+from services.email import send_reset_email, RESET_TOKEN_MINUTES
 from services.careplan_seed import apply_default_careplan
 
 router = APIRouter(prefix="/auth", tags=["auth"])
+
+
+class ForgotPasswordRequest(BaseModel):
+    email: EmailStr
+
+
+class ResetPasswordRequest(BaseModel):
+    token: str = Field(min_length=10, max_length=256)
+    new_password: str = Field(min_length=6, max_length=128)
+
+
+def _token_digest(raw: str) -> str:
+    return hashlib.sha256(raw.encode("utf-8")).hexdigest()
 
 
 @router.post("/register")
@@ -85,3 +103,47 @@ async def login(payload: LoginRequest):
 @router.get("/me")
 async def me(user: User = Depends(get_current_user)):
     return {"user": user_public(user)}
+
+
+@router.post("/forgot-password", status_code=202)
+async def forgot_password(payload: ForgotPasswordRequest, background_tasks: BackgroundTasks):
+    """Request a reset link. Always returns the same generic response to avoid
+    leaking whether an email is registered."""
+    email = payload.email.lower().strip()
+    user = await db.users.find_one({"email": email})
+    if user:
+        # Invalidate any previous unused tokens for this account.
+        await db.password_reset_tokens.delete_many({"email": email, "used": False})
+        raw = secrets.token_urlsafe(32)
+        now = datetime.now(UTC)
+        await db.password_reset_tokens.insert_one({
+            "token_hash": _token_digest(raw),
+            "email": email,
+            "created_at": now,
+            "expires_at": now + timedelta(minutes=RESET_TOKEN_MINUTES),
+            "used": False,
+        })
+        background_tasks.add_task(send_reset_email, email, raw)
+    return {"message": "If an account exists, a reset link has been sent."}
+
+
+@router.post("/reset-password")
+async def reset_password(payload: ResetPasswordRequest):
+    """Consume a single-use token and set a new password."""
+    now = datetime.now(UTC)
+    digest = _token_digest(payload.token)
+    # Atomically mark the token used so it cannot be replayed.
+    token_doc = await db.password_reset_tokens.find_one_and_update(
+        {"token_hash": digest, "used": False, "expires_at": {"$gt": now}},
+        {"$set": {"used": True, "used_at": now}},
+    )
+    if not token_doc:
+        raise HTTPException(status_code=400, detail="Reset-linket er ugyldigt eller udløbet")
+
+    result = await db.users.update_one(
+        {"email": token_doc["email"]},
+        {"$set": {"password_hash": hash_password(payload.new_password)}},
+    )
+    if result.matched_count != 1:
+        raise HTTPException(status_code=500, detail="Kunne ikke opdatere adgangskoden")
+    return {"message": "Adgangskoden er nulstillet"}

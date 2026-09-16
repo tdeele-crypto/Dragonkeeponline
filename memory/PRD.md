@@ -227,3 +227,11 @@ bruger opretter alt selv.
   - Vægt Kurve = terracotta SVG line chart, last 12 months, always shown (empty state if <2 points). Subtitle "Udvikling - sidste 12 måneder".
 - Updated handlePrintWeek in app/(tabs)/index.tsx to also fetch /dragons/{id}/weights and pass weightEntries to the builder.
 - Verified rendered HTML via standalone screenshot; layout matches mockup.
+
+## Update (June 2026) — Forgot/Reset password via email
+- Gmail SMTP email service: backend/services/email.py (smtp.gmail.com:587 STARTTLS, App Password, Danish email template with reset button).
+- routes/auth.py: added /forgot-password (generic response, no user enumeration, BackgroundTasks email) and /reset-password (atomic single-use token consumption -> bcrypt hash update).
+- Tokens in db.password_reset_tokens: {token_hash(sha256), email, created_at, expires_at(30min), used}.
+- Frontend: app/forgot-password.tsx + app/reset-password.tsx (public routes in _layout, always accessible so emailed links open directly). Login has a "Forgot password?" link.
+- Env: GMAIL_USER, GMAIL_APP_PASSWORD, RESET_WEB_URL, RESET_TOKEN_MINUTES in backend/.env (+ deploy/backend.env.example). Prod RESET_WEB_URL=https://dragonkeeper.deele.dk/reset-password.
+- Verified: SMTP send OK, full reset flow (reset->login->replay blocked->restore) OK, both screens render.
