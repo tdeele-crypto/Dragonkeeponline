@@ -21,6 +21,7 @@ import { formatDateISO, isSameDay } from '@/constants/data';
 import { formatFullDate } from '@/i18n/translations';
 import { api } from '@/utils/api';
 import { buildWeekplanPdfHtml } from '@/utils/weekplanPdf';
+import { printHtmlWeb } from '@/utils/printHtmlWeb';
 import { useToast } from '@/context/OverlayContext';
 import { useAdminSettings } from '@/context/AdminSettingsContext';
 import DragonColumn from '@/components/DragonColumn';
@@ -165,7 +166,9 @@ export default function DagsoversigtScreen() {
       });
 
       if (Platform.OS === 'web') {
-        await Print.printAsync({ html, orientation: Print.Orientation.landscape });
+        // expo-print ignores `html` on web (it just calls window.print()),
+        // so render our custom HTML into a hidden iframe and print that.
+        printHtmlWeb(html);
       } else {
         // A4 landscape in points (842 x 595) so the 7-day grid is not squeezed.
         const { uri } = await Print.printToFileAsync({ html, base64: false, width: 842, height: 595 });
