@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   ActivityIndicator,
+  Modal,
   Platform,
   RefreshControl,
   ScrollView,
@@ -45,6 +46,7 @@ export default function DagsoversigtScreen() {
   const [calendarVisible, setCalendarVisible] = useState(false);
   const [activeDragonIndex, setActiveDragonIndex] = useState(0);
   const [exportingWeek, setExportingWeek] = useState(false);
+  const [dragonPickerVisible, setDragonPickerVisible] = useState(false);
 
   const fetchOverview = useCallback(async (d: Date, showSpinner = true) => {
     if (showSpinner) setLoading(true);
@@ -117,8 +119,16 @@ export default function DagsoversigtScreen() {
   const isToday = isSameDay(date, new Date());
 
   const handlePrintWeek = async () => {
-    const dragon = overview?.dragons[activeDragonIndex];
-    if (!dragon) return;
+    const dragons = overview?.dragons || [];
+    if (dragons.length === 0) return;
+    if (dragons.length === 1) {
+      generateWeekplan(dragons[0]);
+    } else {
+      setDragonPickerVisible(true);
+    }
+  };
+
+  const generateWeekplan = async (dragon: DailyOverview['dragons'][number]) => {
     setExportingWeek(true);
     try {
       // Monday of the currently viewed week
@@ -300,6 +310,39 @@ export default function DagsoversigtScreen() {
         onClose={() => setCalendarVisible(false)}
         onSelectDate={handleSelectCalendarDate}
       />
+
+      <Modal
+        visible={dragonPickerVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setDragonPickerVisible(false)}
+      >
+        <TouchableOpacity
+          style={styles.pickerOverlay}
+          activeOpacity={1}
+          onPress={() => setDragonPickerVisible(false)}
+        >
+          <View style={styles.pickerBox} testID="print-dragon-picker">
+            <Text style={styles.pickerTitle}>{t('overview.selectDragonTitle')}</Text>
+            <Text style={styles.pickerSubtitle}>{t('overview.selectDragonToPrint')}</Text>
+            {(overview?.dragons || []).map((dragon) => (
+              <TouchableOpacity
+                key={dragon.dragon_id}
+                style={styles.pickerRow}
+                onPress={() => {
+                  setDragonPickerVisible(false);
+                  generateWeekplan(dragon);
+                }}
+                testID={`print-dragon-option-${dragon.dragon_id}`}
+              >
+                <Ionicons name="paw" size={18} color={COLORS.primary} />
+                <Text style={styles.pickerRowText}>{dragon.name}</Text>
+                <Ionicons name="print-outline" size={18} color={COLORS.textMuted} />
+              </TouchableOpacity>
+            ))}
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -315,6 +358,49 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     paddingHorizontal: 20,
     paddingTop: 12,
+  },
+  pickerOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.45)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+  },
+  pickerBox: {
+    width: '100%',
+    maxWidth: 400,
+    backgroundColor: COLORS.background,
+    borderRadius: 16,
+    padding: 20,
+  },
+  pickerTitle: {
+    fontSize: 18,
+    fontWeight: '800',
+    color: COLORS.textPrimary,
+  },
+  pickerSubtitle: {
+    fontSize: 13,
+    color: COLORS.textMuted,
+    marginTop: 4,
+    marginBottom: 12,
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    borderRadius: 12,
+    backgroundColor: COLORS.surface,
+    borderWidth: 1,
+    borderColor: COLORS.border,
+    marginTop: 10,
+  },
+  pickerRowText: {
+    flex: 1,
+    fontSize: 16,
+    fontWeight: '600',
+    color: COLORS.textPrimary,
   },
   title: {
     fontSize: 26,
