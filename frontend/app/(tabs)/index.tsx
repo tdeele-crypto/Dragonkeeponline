@@ -135,11 +135,22 @@ export default function DagsoversigtScreen() {
         days.push({ date: formatDateISO(d), tasks: dr ? dr.tasks : [] });
       }
 
+      // Weight history for the "Vægt Kurve" card (last 12 months, filtered in the builder)
+      let weightEntries: { date: string; weight_grams: number }[] = [];
+      try {
+        const weights = await api.get(`/dragons/${dragon.dragon_id}/weights`);
+        weightEntries = (weights || []).map((w: any) => ({ date: w.date, weight_grams: w.weight_grams }));
+      } catch {
+        weightEntries = [];
+      }
+
       const html = buildWeekplanPdfHtml({
         dragonName: dragon.name,
         ageCategory: dragon.age_category,
         activityState: dragon.activity_state,
+        photoBase64: dragon.photo_base64,
         days,
+        weightEntries,
         language,
       });
 

@@ -218,3 +218,12 @@ bruger opretter alt selv.
   setup for multiple age categories.
 - P2: Offer to clear leftover "TEST_" seed data (dragons/items) still
   present in the database from earlier testing sessions, once user confirms.
+
+## Update (June 2026) — Ugeoversigt PDF redesign
+- Rewrote /app/frontend/utils/weekplanPdf.ts to match user's A4-landscape mockup:
+  - Title top-left "Ugeoversigt - Printet d. DD/MM-YYYY" (auto date), Georgia serif.
+  - Dragon id-card (avatar + name + age badge).
+  - 5-column CSS grid: row1 Man-Fre, row2 Lør, Søn + "Vægt Kurve" card.
+  - Vægt Kurve = terracotta SVG line chart, last 12 months, always shown (empty state if <2 points). Subtitle "Udvikling - sidste 12 måneder".
+- Updated handlePrintWeek in app/(tabs)/index.tsx to also fetch /dragons/{id}/weights and pass weightEntries to the builder.
+- Verified rendered HTML via standalone screenshot; layout matches mockup.
