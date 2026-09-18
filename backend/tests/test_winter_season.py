@@ -1,10 +1,11 @@
-"""Tests for the new manual-override + 30-min-fallback Seasonal Light feature.
+"""Tests for the manual-override Seasonal Light feature.
 
 Covers:
 - AppSettings no longer has light_winter_shorten_hours (removed field)
 - Admin settings PUT for light_summer_start / light_winter_start
 - TimeSlot winter_time persistence via PUT /api/times/{id}
-- /api/daily-overview winter fallback logic (services/season.py apply_winter_times)
+- services/season.py apply_winter_times: explicit overrides only, unset slots
+  keep their normal (summer) time.
 """
 import os
 import datetime
@@ -94,69 +95,30 @@ class TestTimeWinterOverridePersistence:
 
 
 class TestDailyOverviewWinterFallback:
-    """Force today into winter period and verify fallback + override logic."""
+    """New rule: winter uses explicit overrides only; unset slots keep their
+    normal (summer) time. Tested directly against services.season."""
 
-    def test_winter_fallback_30min_after_light_on(self, api_client):
-        today = datetime.date.today()
-        # winter period = [winter_start, summer_start); make it basically the whole
-        # year except tomorrow, guaranteeing "today" is inside winter.
-        tomorrow = today + datetime.timedelta(days=1)
-        summer_start = f"{tomorrow.month:02d}-{tomorrow.day:02d}"
-        winter_start = f"{tomorrow.month:02d}-{tomorrow.day:02d}"
-        # winter <= summer (equal) -> is_in_winter_period requires winter<=today<summer
-        # equal winter/summer would give empty range, so instead set winter_start to
-        # today and summer_start to tomorrow+1 to guarantee inclusion.
-        day_after = today + datetime.timedelta(days=2)
-        winter_start = f"{today.month:02d}-{today.day:02d}"
-        summer_start = f"{day_after.month:02d}-{day_after.day:02d}"
+    def test_apply_winter_times_keeps_summer_time_when_unset(self):
+        from services.season import apply_winter_times
 
-        settings_resp = api_client.put(f"{API}/admin/settings", json={
-            "light_summer_start": summer_start,
-            "light_winter_start": winter_start,
-        })
-        assert settings_resp.status_code == 200
+        tasks = [
+            {"time_id": "A", "time": "07:00", "category": "lys"},
+            {"time_id": "B", "time": "08:00", "category": "fodring"},
+            {"time_id": "C", "time": "18:00", "category": "pleje"},
+        ]
+        # Only B has an explicit winter override.
+        apply_winter_times(tasks, {"A": None, "B": "09:00", "C": None})
+        by_id = {t["category"]: t["time"] for t in tasks}
+        assert by_id["lys"] == "07:00"      # unchanged (no override)
+        assert by_id["fodring"] == "09:00"  # explicit override applied
+        assert by_id["pleje"] == "18:00"    # unchanged (no override) - NOT collapsed
 
-        # Set an explicit winter override ONLY on the light-on slot.
-        cur_on = next(t for t in api_client.get(f"{API}/times").json() if t["id"] == TIME_LIGHT_ON)
-        override_resp = api_client.put(f"{API}/times/{TIME_LIGHT_ON}", json={
-            "time": cur_on["time"], "winter_time": "06:15",
-        })
-        assert override_resp.status_code == 200
+    def test_apply_winter_times_no_overrides_is_noop(self):
+        from services.season import apply_winter_times
 
-        date_str = today.strftime("%Y-%m-%d")
-        overview_resp = api_client.get(f"{API}/daily-overview", params={"date": date_str})
-        assert overview_resp.status_code == 200
-        overview = overview_resp.json()
-        assert overview["is_winter_period"] is True
-
-        sif = next(d for d in overview["dragons"] if d["dragon_id"] == DRAGON_ID)
-        tasks_by_time = [t for t in sif["tasks"]]
-        assert len(tasks_by_time) > 0
-
-        # light-on task (lys) should show overridden 06:15
-        lys_tasks = [t for t in tasks_by_time if t["category"] == "lys"]
-        assert any(t["time"] == "06:15" for t in lys_tasks), f"lys tasks: {lys_tasks}"
-
-        # ALL other tasks without their own override (fodring/pleje/lys-off) should be 06:45
-        for t in tasks_by_time:
-            if t["time"] == "06:15":
-                continue
-            assert t["time"] == "06:45", f"expected fallback 06:45, got {t}"
-
-        # Now set an explicit override on a fodring slot too, verify it uses its own value
-        cur_fodring = next(t for t in api_client.get(f"{API}/times").json() if t["id"] == TIME_FODRING)
-        api_client.put(f"{API}/times/{TIME_FODRING}", json={
-            "time": cur_fodring["time"], "winter_time": "11:11",
-        })
-        overview_resp2 = api_client.get(f"{API}/daily-overview", params={"date": date_str})
-        overview2 = overview_resp2.json()
-        sif2 = next(d for d in overview2["dragons"] if d["dragon_id"] == DRAGON_ID)
-        fodring_tasks = [t for t in sif2["tasks"] if t["category"] == "fodring"]
-        # the fodring task whose time_id had an override should now show 11:11
-        assert any(t["time"] == "11:11" for t in fodring_tasks), f"fodring tasks: {fodring_tasks}"
-        # other non-overridden tasks still fall back to 06:45
-        others = [t for t in sif2["tasks"] if t["time"] not in ("06:15", "11:11")]
-        for t in others:
-            assert t["time"] == "06:45", f"expected fallback 06:45, got {t}"
-
-        # cleanup done in module-scoped restore_state fixture
+        tasks = [
+            {"time_id": "A", "time": "07:00", "category": "lys"},
+            {"time_id": "C", "time": "18:00", "category": "pleje"},
+        ]
+        apply_winter_times(tasks, {"A": None, "C": None})
+        assert [t["time"] for t in tasks] == ["07:00", "18:00"]

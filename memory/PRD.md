@@ -235,3 +235,9 @@ bruger opretter alt selv.
 - Frontend: app/forgot-password.tsx + app/reset-password.tsx (public routes in _layout, always accessible so emailed links open directly). Login has a "Forgot password?" link.
 - Env: GMAIL_USER, GMAIL_APP_PASSWORD, RESET_WEB_URL, RESET_TOKEN_MINUTES in backend/.env (+ deploy/backend.env.example). Prod RESET_WEB_URL=https://dragonkeeper.deele.dk/reset-password.
 - Verified: SMTP send OK, full reset flow (reset->login->replay blocked->restore) OK, both screens render.
+
+## Update (June 2026) — Winter time fallback fixed
+- BUG: In winter period, time slots WITHOUT an explicit winter_time were collapsed to "light-on + 30 min" (e.g. an 18:00 pleje task showed 08:30). 
+- FIX: services/season.py apply_winter_times now applies ONLY explicit winter_time overrides; any slot without an override keeps its normal (summer) time. Removed the light-on+30 fallback and shift_time_str/LYS_ON_FALLBACK_OFFSET_MINUTES.
+- Verified end-to-end: override slots use winter_time; unset slots keep summer time (18:00 stays 18:00).
+- Updated backend/tests/test_winter_season.py TestDailyOverviewWinterFallback to unit-test the new behavior directly.
